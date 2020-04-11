@@ -1,0 +1,55 @@
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+stages:
+  - stage: Build
+    jobs:
+    - job:
+      steps:
+        - task: DotNetCoreCLI@2
+          displayName: Build
+          inputs:
+            command: build
+            arguments: '--configuration $(buildConfiguration)'
+
+        - task: DotNetCoreCLI@2
+          displayName: Test
+          inputs:
+            command: test
+            arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal'
+          env:
+            AadAuth:Password: $(AadAuth:Password)
+          condition: failed()
+
+        - task: DotNetCoreCLI@2
+          displayName: Pack
+          inputs:
+            command: pack
+            arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
+            packagesToPack: '*.sln'
+
+        - task: PublishPipelineArtifact@1
+          displayName: Publish Artifacts
+          inputs:
+            targetPath: '$(Build.ArtifactStagingDirectory)'
+            publishLocation: 'pipeline'
+          condition: always()
+
+  - stage: Deploy
+    jobs:
+    - deployment: NuGet
+      environment: NuGet
+      strategy: 
+        runOnce:
+          deploy:          
+            steps:
+            - task: NuGetCommand@2
+              displayName: Push
+              inputs:
+                command: 'push'
+                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
+                nuGetFeedType: 'external'
+                publishFeedCredentials: 'nuget.org'

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Console": {
+      "commandName": "Project",
+      "commandLineArgs": "pack -s \"%temp%\\M365\\2a6a8d34-16c4-4c2f-bd91-7ef7ff9b017f\\IntuneAppBuilders\\AnyDesk\" \"$(SolutionDir)\\Source\\Apps\\bin\\$(Configuration)\\$(TargetFramework)\\IntuneAppBuilder.Apps.dll"
+    }
+  }
+}

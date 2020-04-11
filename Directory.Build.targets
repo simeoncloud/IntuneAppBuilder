@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)/default.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="7.10.*" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,27 @@
+# https://stackoverflow.com/questions/170961/whats-the-best-crlf-carriage-return-line-feed-handling-strategy-with-git
+# Auto detect text files and perform LF normalization
+*        text=auto
+
+## GRAPHICS
+*.ai	binary
+*.bmp	binary
+*.eps	binary
+*.gif	binary
+*.ico	binary
+*.jng	binary
+*.jp2	binary
+*.jpg	binary
+*.jpeg	binary
+*.jpx	binary
+*.jxr	binary
+*.pdf	binary
+*.png	binary
+*.psb	binary
+*.psd	binary
+*.svg   text
+*.svgz	binary
+*.tif	binary
+*.tiff	binary
+*.wbmp	binary
+*.webp	binary
+*.nupkg	binary

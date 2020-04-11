@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<AssemblyName>$(SolutionName)</AssemblyName>
+		<RootNamespace>$(AssemblyName)</RootNamespace>
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>$(SolutionName)</ToolCommandName>
+		<Authors>Simeon</Authors>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<!-- https://github.com/SonarSource/sonar-dotnet/issues/2426 -->
+		<NoWarn>AD0001</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.CommandLine" Version="2.0.0-*" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
+		<PackageReference Include="Microsoft.Graph.Beta" Version="0.12.0-preview" />
+		<PackageReference Include="Microsoft.Graph.Auth" Version="1.0.0-preview.4" />
+		<PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
+	</ItemGroup>
+
+</Project>
