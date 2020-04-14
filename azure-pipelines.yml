@@ -18,22 +18,21 @@ stages:
           displayName: Build
           inputs:
             command: build
-            arguments: '--configuration $(buildConfiguration)'
+            arguments: '--configuration $(buildConfiguration) /p:Version=%GitVersion.SemVer%'
 
         - task: DotNetCoreCLI@2
           displayName: Test
           inputs:
             command: test
-            arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal'
+            arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal /p:Version=%GitVersion.SemVer%'
           env:
             AadAuth:Password: $(AadAuth:Password)
-          condition: failed()
 
         - task: DotNetCoreCLI@2
           displayName: Pack
           inputs:
             command: pack
-            arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
+            arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory) /p:Version=%GitVersion.SemVer%'
             packagesToPack: '*.sln'
 
         - task: PublishPipelineArtifact@1
