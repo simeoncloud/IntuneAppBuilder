@@ -62,6 +62,7 @@ stages:
           condition: always()
 
   - stage: DeployNuGet
+    displayName: Deploy to nuget.org
     dependsOn: 
       - Build
     jobs:
@@ -80,6 +81,7 @@ stages:
                 publishFeedCredentials: 'nuget.org'
 
   - stage: DeployAzureArtifacts
+    displayName: Deploy to Azure Artifacts
     dependsOn: 
       - Build
     jobs:
