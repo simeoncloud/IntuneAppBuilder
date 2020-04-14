@@ -61,7 +61,7 @@ stages:
             publishLocation: 'pipeline'
           condition: always()
 
-  - stage: Deploy
+  - stage: DeployNuGet
     jobs:
     - deployment: NuGet
       environment: NuGet
@@ -77,6 +77,8 @@ stages:
                 nuGetFeedType: 'external'
                 publishFeedCredentials: 'nuget.org'
 
+  - stage: DeployAzureArtifacts
+    jobs:
     - deployment: AzureArtifacts
       environment: AzureArtifacts
       strategy: 
