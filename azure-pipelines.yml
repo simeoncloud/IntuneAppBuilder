@@ -2,7 +2,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  buildConfiguration: 'Release'
+  BuildConfiguration: 'Release'
 
 stages:
   - stage: Build
@@ -18,20 +18,20 @@ stages:
           displayName: Build
           inputs:
             command: build
-            arguments: '--configuration $(buildConfiguration) /p:Version=$(GitVersion.SemVer)'
-          env:
-            Version: $(GitVersion.SemVer)
-
+            arguments: '--configuration $(BuildConfiguration)'
+            versionEnvVar: GitVersion.SemVer
+          
         - task: DotNetCoreCLI@2
           displayName: Test
           inputs:
             command: test
-            arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal /p:Version=$(GitVersion.SemVer)'
+            arguments: '--configuration $(BuildConfiguration) --verbosity normal'
             nobuild: true
+            versionEnvVar: GitVersion.SemVer
+            publishTestResults: true
           env:
             AadAuth:Password: $(AadAuth:Password)
-            Version: $(GitVersion.SemVer)
-
+            
         - task: DotNetCoreCLI@2
           displayName: Pack
           inputs:
@@ -40,11 +40,18 @@ stages:
             packagesToPack: '*.sln'
             configurationToPack: Release
             nobuild: true
-          env:
-            Version: $(GitVersion.SemVer)
+            versionEnvVar: GitVersion.SemVer
+          
+        - task: DotNetCoreCLI@2
+          displayName: Publish
+          inputs:
+            command: publish
+            modifyOutputPath: true
+            nobuild: true
+            versionEnvVar: GitVersion.SemVer
 
         - task: PublishPipelineArtifact@1
-          displayName: Publish Artifacts
+          displayName: Publish Pipeline Artifacts
           inputs:
             targetPath: '$(Build.ArtifactStagingDirectory)'
             publishLocation: 'pipeline'
