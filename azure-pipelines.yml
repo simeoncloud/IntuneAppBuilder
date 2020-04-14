@@ -22,7 +22,6 @@ stages:
             arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal'
           env:
             AadAuth:Password: $(AadAuth:Password)
-          condition: failed()
 
         - task: DotNetCoreCLI@2
           displayName: Pack
