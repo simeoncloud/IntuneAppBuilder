@@ -59,6 +59,7 @@ stages:
           inputs:
             targetPath: '$(Build.ArtifactStagingDirectory)'
             publishLocation: 'pipeline'
+            artifactName: Build
           condition: always()
 
   - stage: DeployNuGet
