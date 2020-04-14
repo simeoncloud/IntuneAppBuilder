@@ -98,7 +98,6 @@ stages:
               displayName: Push
               inputs:
                 command: 'push'
-                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
-                nuGetFeedType: 'internal'
+                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'               
                 feedPublish: 'simeoncloud'
                 allowPackageConflicts: true
