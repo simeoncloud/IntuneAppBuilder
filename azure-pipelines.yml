@@ -3,6 +3,7 @@ pool:
 
 variables:
   BuildConfiguration: 'Release'
+  Verbosity: 'normal'
 
 stages:
   - stage: Build
@@ -18,7 +19,7 @@ stages:
           displayName: Build
           inputs:
             command: build
-            arguments: '--configuration $(BuildConfiguration) --verbosity normal'
+            arguments: '--configuration $(BuildConfiguration) ----verbosity $(Verbosity) $(Verbosity)'
           env:
             Version: $(GitVersion.SemVer)
           
@@ -26,7 +27,7 @@ stages:
           displayName: Test
           inputs:
             command: test
-            arguments: '--configuration $(BuildConfiguration) --no-build --verbosity normal'
+            arguments: '--configuration $(BuildConfiguration) --no-build ----verbosity $(Verbosity) $(Verbosity)'
           env:
             AadAuth:Password: $(AadAuth:Password)
             Version: $(GitVersion.SemVer)
@@ -35,9 +36,9 @@ stages:
           displayName: Pack
           inputs:
             command: pack
-            verbosityPack: normal
+            verbosityPack: $(Verbosity)
             packagesToPack: '*.sln'
-            configurationToPack: Release
+            configurationToPack: $(BuildConfiguration)
             nobuild: true
           env:
             Version: $(GitVersion.SemVer)
@@ -46,7 +47,9 @@ stages:
           displayName: Publish
           inputs:
             command: publish
+            arguments: '--no-build'
             publishWebProjects: false
+            zipAfterPublish: false
             modifyOutputPath: true
           env:
             Version: $(GitVersion.SemVer)
