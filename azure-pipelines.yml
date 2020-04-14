@@ -21,7 +21,7 @@ stages:
             command: build
             arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)'
           env:
-            Version: GitVersion.SemVer
+            Version: $(GitVersion.SemVer)
           
         - task: DotNetCoreCLI@2
           displayName: Test
@@ -29,7 +29,7 @@ stages:
             command: test
             arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity)'
           env:
-            Version: GitVersion.SemVer
+            Version: $(GitVersion.SemVer)
             AadAuth:Password: $(AadAuth:Password)
             
         - task: DotNetCoreCLI@2
