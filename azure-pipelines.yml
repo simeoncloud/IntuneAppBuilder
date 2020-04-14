@@ -32,7 +32,7 @@ stages:
           displayName: Pack
           inputs:
             command: pack
-            arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory) /p:Version=$(GitVersion.SemVer)'
+            arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal --output $(Build.ArtifactStagingDirectory) /p:Version=$(GitVersion.SemVer)'
             packagesToPack: '*.sln'
 
         - task: PublishPipelineArtifact@1
