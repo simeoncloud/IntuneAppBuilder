@@ -19,21 +19,29 @@ stages:
           inputs:
             command: build
             arguments: '--configuration $(buildConfiguration) /p:Version=$(GitVersion.SemVer)'
+          env:
+            Version: $(GitVersion.SemVer)
 
         - task: DotNetCoreCLI@2
           displayName: Test
           inputs:
             command: test
             arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal /p:Version=$(GitVersion.SemVer)'
+            nobuild: true
           env:
             AadAuth:Password: $(AadAuth:Password)
+            Version: $(GitVersion.SemVer)
 
         - task: DotNetCoreCLI@2
           displayName: Pack
           inputs:
             command: pack
-            arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal --output $(Build.ArtifactStagingDirectory) /p:Version=$(GitVersion.SemVer)'
+            verbosityPack: normal
             packagesToPack: '*.sln'
+            configurationToPack: Release
+            nobuild: true
+          env:
+            Version: $(GitVersion.SemVer)
 
         - task: PublishPipelineArtifact@1
           displayName: Publish Artifacts
