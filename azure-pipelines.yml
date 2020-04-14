@@ -16,7 +16,7 @@ stages:
             versionSpec: '5.x'
             
         - task: DotNetCoreCLI@2
-          displayName: Build
+          displayName: dotnet build
           inputs:
             command: build
             arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)'
@@ -24,7 +24,7 @@ stages:
             Version: $(GitVersion.SemVer)
           
         - task: DotNetCoreCLI@2
-          displayName: Test
+          displayName: dotnet test
           inputs:
             command: test
             arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity)'
@@ -33,7 +33,7 @@ stages:
             AadAuth:Password: $(AadAuth:Password)
             
         - task: DotNetCoreCLI@2
-          displayName: Pack
+          displayName: dotnet pack
           inputs:
             command: pack
             verbosityPack: $(Verbosity)
@@ -44,7 +44,7 @@ stages:
             Version: $(GitVersion.SemVer)
           
         - task: DotNetCoreCLI@2
-          displayName: Publish
+          displayName: dotnet publish
           inputs:
             command: publish
             arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity) -o $(Build.ArtifactStagingDirectory)'
@@ -68,7 +68,7 @@ stages:
     dependsOn: 
       - Build
     jobs:
-    - deployment: NuGet
+    - deployment: Deploy
       environment: NuGet
       strategy: 
         runOnce:
@@ -81,13 +81,14 @@ stages:
                 packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
                 nuGetFeedType: 'external'
                 publishFeedCredentials: 'nuget.org'
+                allowPackageConflicts: true
 
   - stage: DeployAzureArtifacts
     displayName: Deploy to Azure Artifacts
     dependsOn: 
       - Build
     jobs:
-    - deployment: AzureArtifacts
+    - deployment: Deploy
       environment: AzureArtifacts
       strategy: 
         runOnce:
@@ -97,5 +98,7 @@ stages:
               displayName: Push
               inputs:
                 command: 'push'
-                searchPatternPush: '$(Pipeline.Workspace)/**/*.nupkg'
+                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
+                nuGetFeedType: 'internal'
                 feedPublish: 'simeoncloud'
+                allowPackageConflicts: true
