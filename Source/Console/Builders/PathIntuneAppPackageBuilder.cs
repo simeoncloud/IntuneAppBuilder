@@ -22,6 +22,6 @@ namespace IntuneAppBuilder.Builders
             this.packagingService = packagingService;
         }
 
-        public Task<MobileLobAppContentFilePackage> BuildAsync() => packagingService.BuildPackageAsync(path);
+        public Task<IntuneAppPackage> BuildAsync() => packagingService.BuildPackageAsync(path);
     }
 }
