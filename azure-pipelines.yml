@@ -25,7 +25,7 @@ stages:
           displayName: Test
           inputs:
             command: test
-            arguments: '--configuration $(BuildConfiguration) --verbosity normal'
+            arguments: '--configuration $(BuildConfiguration)'
             nobuild: true
             versionEnvVar: GitVersion.SemVer
             publishTestResults: true
@@ -46,6 +46,7 @@ stages:
           displayName: Publish
           inputs:
             command: publish
+            arguments: '--configuration $(BuildConfiguration)'
             modifyOutputPath: true
             nobuild: true
             versionEnvVar: GitVersion.SemVer
