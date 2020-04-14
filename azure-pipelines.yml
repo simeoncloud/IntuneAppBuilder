@@ -68,7 +68,7 @@ stages:
     dependsOn: 
       - Build
     jobs:
-    - deployment: Deploy
+    - deployment: Job
       environment: NuGet
       strategy: 
         runOnce:
@@ -88,7 +88,7 @@ stages:
     dependsOn: 
       - Build
     jobs:
-    - deployment: Deploy
+    - deployment: Job
       environment: AzureArtifacts
       strategy: 
         runOnce:
