@@ -50,7 +50,7 @@ stages:
           displayName: Publish
           inputs:
             command: publish
-            arguments: '--no-build'
+            arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity)'
             publishWebProjects: false
             zipAfterPublish: false
             modifyOutputPath: true
