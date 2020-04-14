@@ -18,14 +18,14 @@ stages:
           displayName: Build
           inputs:
             command: build
-            arguments: '--configuration $(BuildConfiguration)'
+            arguments: '--configuration $(BuildConfiguration) --verbosity normal'
             versionEnvVar: 'GitVersion.SemVer'
           
         - task: DotNetCoreCLI@2
           displayName: Test
           inputs:
             command: test
-            arguments: '--configuration $(BuildConfiguration)'
+            arguments: '--configuration $(BuildConfiguration) --no-build --verbosity normal'
             versionEnvVar: 'GitVersion.SemVer'
           env:
             AadAuth:Password: $(AadAuth:Password)
@@ -44,7 +44,7 @@ stages:
           displayName: Publish
           inputs:
             command: custom
-            custom: 'publish --configure --configuration $(BuildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
+            custom: 'publish --configuration $(BuildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory) --verbosity normal'
             modifyOutputPath: true
             versionEnvVar: 'GitVersion.SemVer'
           
