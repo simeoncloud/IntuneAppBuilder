@@ -51,6 +51,7 @@ stages:
             publishWebProjects: false
             zipAfterPublish: false
             modifyOutputPath: true
+            projects: '**/*/*.csproj'
           env:
             Version: $(GitVersion.SemVer)
             
