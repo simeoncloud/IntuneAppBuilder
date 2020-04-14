@@ -20,17 +20,16 @@ stages:
           inputs:
             command: build
             arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)'
-            versioningScheme: byEnvVar
-            versionEnvVar: GitVersion.SemVer
+          env:
+            Version: GitVersion.SemVer
           
         - task: DotNetCoreCLI@2
           displayName: Test
           inputs:
             command: test
             arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity)'
-            versioningScheme: byEnvVar
-            versionEnvVar: GitVersion.SemVer
           env:
+            Version: GitVersion.SemVer
             AadAuth:Password: $(AadAuth:Password)
             
         - task: DotNetCoreCLI@2
@@ -41,8 +40,6 @@ stages:
             packagesToPack: '*.sln'
             configurationToPack: $(BuildConfiguration)
             nobuild: true
-            versioningScheme: byEnvVar
-            versionEnvVar: GitVersion.SemVer
           env:
             Version: $(GitVersion.SemVer)
           
@@ -50,14 +47,13 @@ stages:
           displayName: Publish
           inputs:
             command: publish
-            arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity)'
+            arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity) -o $(Build.ArtifactStagingDirectory)'
             publishWebProjects: false
             zipAfterPublish: false
             modifyOutputPath: true
-            versioningScheme: byEnvVar
-            versionEnvVar: GitVersion.SemVer
-            outputDir: '$(Build.ArtifactStagingDirectory)'
-
+          env:
+            Version: $(GitVersion.SemVer)
+            
         - task: PublishPipelineArtifact@1
           displayName: Publish Pipeline Artifacts
           inputs:
