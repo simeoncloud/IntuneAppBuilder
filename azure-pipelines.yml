@@ -93,7 +93,7 @@ stages:
         runOnce:
           deploy:          
             steps:
-            - task: DotNetCoreCLI@2
+            - task: NuGetCommand@2
               displayName: Push
               inputs:
                 command: 'push'
