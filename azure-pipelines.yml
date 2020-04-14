@@ -9,6 +9,11 @@ stages:
     jobs:
     - job:
       steps:
+        - task: UseGitVersion@5
+          displayName: GitVersion
+          inputs:
+            versionSpec: '5.x'
+            
         - task: DotNetCoreCLI@2
           displayName: Build
           inputs:
@@ -22,6 +27,7 @@ stages:
             arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal'
           env:
             AadAuth:Password: $(AadAuth:Password)
+          condition: failed()
 
         - task: DotNetCoreCLI@2
           displayName: Pack
