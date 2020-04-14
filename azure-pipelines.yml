@@ -56,7 +56,8 @@ stages:
             modifyOutputPath: true
             versioningScheme: byEnvVar
             versionEnvVar: GitVersion.SemVer
-          
+            outputDir: '$(Build.ArtifactStagingDirectory)'
+
         - task: PublishPipelineArtifact@1
           displayName: Publish Pipeline Artifacts
           inputs:
@@ -86,9 +87,9 @@ stages:
         runOnce:
           deploy:          
             steps:
-            - task: NuGetCommand@2
+            - task: DotNetCoreCLI@2
               displayName: Push
               inputs:
                 command: 'push'
-                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
-                nuGetFeedType: 'internal'                
+                searchPatternPush: '$(Pipeline.Workspace)/**/*.nupkg'
+                feedPublish: 'simeoncloud'      

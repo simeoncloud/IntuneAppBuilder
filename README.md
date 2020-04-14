@@ -4,6 +4,8 @@ Use the Simeon IntuneAppBuilder tool to create and deploy Intune packages for MS
  
 IntuneAppBuilder is an open source component from the Simeon Microsoft 365 Management toolset. Learn more about Simeon’s full functionality at https://getsimeon.com.
 
+[![Build Status](https://dev.azure.com/simeoncloud/Default/_apis/build/status/simeoncloud.IntuneAppBuilder?branchName=master)](https://dev.azure.com/simeoncloud/Default/_build/latest?definitionId=1&branchName=master)
+
 ## Getting Started
 
 1. **[Get .NET Core 3.1](https://dotnet.microsoft.com/download)** (or higher)
