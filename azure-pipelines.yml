@@ -78,6 +78,7 @@ stages:
                 publishFeedCredentials: 'nuget.org'
 
   - stage: DeployAzureArtifacts
+    dependsOn: []
     jobs:
     - deployment: AzureArtifacts
       environment: AzureArtifacts
@@ -90,4 +91,4 @@ stages:
               inputs:
                 command: 'push'
                 searchPatternPush: '$(Pipeline.Workspace)/**/*.nupkg'
-                feedPublish: 'simeoncloud'      
+                feedPublish: 'simeoncloud'
