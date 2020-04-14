@@ -19,7 +19,7 @@ stages:
           displayName: Build
           inputs:
             command: build
-            arguments: '--configuration $(BuildConfiguration) ----verbosity $(Verbosity) $(Verbosity)'
+            arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)'
           env:
             Version: $(GitVersion.SemVer)
           
@@ -27,7 +27,7 @@ stages:
           displayName: Test
           inputs:
             command: test
-            arguments: '--configuration $(BuildConfiguration) --no-build ----verbosity $(Verbosity) $(Verbosity)'
+            arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity)'
           env:
             AadAuth:Password: $(AadAuth:Password)
             Version: $(GitVersion.SemVer)
