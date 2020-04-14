@@ -25,7 +25,7 @@ namespace IntuneAppBuilder.Services
         public IntuneAppPackagingService(ILogger<IntuneAppPackagingService> logger) => this.logger = logger;
 
         /// <inheritdoc />
-        public async Task<MobileLobAppContentFilePackage> BuildPackageAsync(string sourcePath = ".", string setupFilePath = null)
+        public async Task<IntuneAppPackage> BuildPackageAsync(string sourcePath = ".", string setupFilePath = null)
         {
             var sw = Stopwatch.StartNew();
 
@@ -78,7 +78,7 @@ namespace IntuneAppBuilder.Services
 
             if (app is WindowsMobileMSI) file.Manifest = msiInfo.Manifest.ToByteArray();
 
-            var result = new MobileLobAppContentFilePackage
+            var result = new IntuneAppPackage
             {
                 Data = data,
                 App = app,
@@ -91,7 +91,7 @@ namespace IntuneAppBuilder.Services
             return result;
         }
 
-        public async Task BuildPackageForPortalAsync(MobileLobAppContentFilePackage package, Stream outputStream)
+        public async Task BuildPackageForPortalAsync(IntuneAppPackage package, Stream outputStream)
         {
             logger.LogInformation($"Building portal package for {package.App.DisplayName}.");
 
@@ -147,7 +147,7 @@ namespace IntuneAppBuilder.Services
         ///     It is essentially a collection of metadata, used specifically by the portal javascript to patch data on the mobile
         ///     app and its content (e.g. the Manifest of the content file).
         /// </summary>
-        private string GetDetectionXml(MobileLobAppContentFilePackage package)
+        private string GetDetectionXml(IntuneAppPackage package)
         {
             var xml = new XmlDocument();
 

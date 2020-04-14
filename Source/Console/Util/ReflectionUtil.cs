@@ -19,7 +19,7 @@ namespace IntuneAppBuilder.Util
         /// </summary>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public static async Task SaveInstallBatFileAsync(this IIntuneAppContentBuilder builder)
+        public static async Task SaveInstallBatFileAsync(this IIntuneAppPackageBuilder builder)
         {
             await typeof(ReflectionUtil).Assembly.SaveEmbeddedResourceAsFileAsync($"{typeof(ReflectionUtil).Namespace}.Install.bat", "Install.bat");
         }

@@ -59,13 +59,13 @@ namespace IntuneAppBuilder
             AddBuilders(sources, services);
 
             var sp = services.BuildServiceProvider();
-            foreach (var builder in sp.GetRequiredService<IEnumerable<IIntuneAppContentBuilder>>()) await BuildAsync(builder, sp.GetRequiredService<IIntuneAppPackagingService>(), output, GetLogger(sp));
+            foreach (var builder in sp.GetRequiredService<IEnumerable<IIntuneAppPackageBuilder>>()) await BuildAsync(builder, sp.GetRequiredService<IIntuneAppPackagingService>(), output, GetLogger(sp));
         }
 
         /// <summary>
         ///     Invokes the builder in a dedicated working directory.
         /// </summary>
-        private static async Task BuildAsync(IIntuneAppContentBuilder builder, IIntuneAppPackagingService packagingService, string output, ILogger logger)
+        private static async Task BuildAsync(IIntuneAppPackageBuilder builder, IIntuneAppPackagingService packagingService, string output, ILogger logger)
         {
             logger.LogInformation($"Building app content for {builder.Name}.");
             var cd = Environment.CurrentDirectory;
@@ -106,15 +106,15 @@ namespace IntuneAppBuilder
                     // assembly source
                     logger.LogInformation($"Loading assembly {source}.");
                     var a = Assembly.LoadFrom(source.FullName);
-                    foreach (var type in a.GetTypes().Where(t => !t.IsAbstract && typeof(IIntuneAppContentBuilder).IsAssignableFrom(t)))
+                    foreach (var type in a.GetTypes().Where(t => !t.IsAbstract && typeof(IIntuneAppPackageBuilder).IsAssignableFrom(t)))
                     {
-                        logger.LogInformation($"Registering {nameof(IIntuneAppContentBuilder)} {type.Name}.");
-                        services.AddTransient(typeof(IIntuneAppContentBuilder), type);
+                        logger.LogInformation($"Registering {nameof(IIntuneAppPackageBuilder)} {type.Name}.");
+                        services.AddTransient(typeof(IIntuneAppPackageBuilder), type);
                     }
                 }
                 else if (source.Extension.Equals(".msi", StringComparison.OrdinalIgnoreCase) || source is DirectoryInfo)
                 {
-                    services.AddSingleton<IIntuneAppContentBuilder>(sp => ActivatorUtilities.CreateInstance<PathIntuneAppContentBuilder>(sp, source.FullName));
+                    services.AddSingleton<IIntuneAppPackageBuilder>(sp => ActivatorUtilities.CreateInstance<PathIntuneAppPackageBuilder>(sp, source.FullName));
                 }
                 else
                 {
@@ -141,9 +141,9 @@ namespace IntuneAppBuilder
             }
         }
 
-        private static MobileLobAppContentFilePackage ReadPackage(FileInfo file, ILogger logger)
+        private static IntuneAppPackage ReadPackage(FileInfo file, ILogger logger)
         {
-            var package = JsonConvert.DeserializeObject<MobileLobAppContentFilePackage>(File.ReadAllText(file.FullName));
+            var package = JsonConvert.DeserializeObject<IntuneAppPackage>(File.ReadAllText(file.FullName));
             var dataPath = Path.Combine(file.DirectoryName, package.App.FileName);
             if (!File.Exists(dataPath)) throw new FileNotFoundException($"Could not find data file at {dataPath}.");
             logger.LogInformation($"Using package data file {dataPath}");

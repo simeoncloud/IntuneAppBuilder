@@ -9,7 +9,7 @@ namespace IntuneAppBuilder.Domain
     /// Metadata about a package produced for an Intune mobile app.
     /// </summary>
 #pragma warning disable S3881 // "IDisposable" should be implemented correctly
-    public class MobileLobAppContentFilePackage : IDisposable
+    public class IntuneAppPackage : IDisposable
 #pragma warning restore S3881 // "IDisposable" should be implemented correctly
     {
         /// <summary>
