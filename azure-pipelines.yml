@@ -64,10 +64,25 @@ stages:
             artifactName: Build
           condition: always()
 
+  - stage: DeployAzureArtifacts
+    displayName: Deploy to Azure Artifacts
+    jobs:
+    - deployment: Deploy
+      environment: AzureArtifacts
+      strategy: 
+        runOnce:
+          deploy:          
+            steps:
+            - task: NuGetCommand@2
+              displayName: Push
+              inputs:
+                command: 'push'
+                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'               
+                feedPublish: 'simeoncloud'
+                allowPackageConflicts: true
+
   - stage: DeployNuGet
     displayName: Deploy to nuget.org
-    dependsOn: 
-      - Build
     jobs:
     - deployment: Deploy
       environment: NuGet
@@ -82,23 +97,4 @@ stages:
                 packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
                 nuGetFeedType: 'external'
                 publishFeedCredentials: 'nuget.org'
-                allowPackageConflicts: true
-
-  - stage: DeployAzureArtifacts
-    displayName: Deploy to Azure Artifacts
-    dependsOn: 
-      - Build
-    jobs:
-    - deployment: Deploy
-      environment: AzureArtifacts
-      strategy: 
-        runOnce:
-          deploy:          
-            steps:
-            - task: NuGetCommand@2
-              displayName: Push
-              inputs:
-                command: 'push'
-                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'               
-                feedPublish: 'simeoncloud'
                 allowPackageConflicts: true
