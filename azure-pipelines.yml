@@ -64,12 +64,11 @@ stages:
             artifactName: Build
           condition: always()
 
-  - stage: DeployNuGet
-    displayName: Deploy to nuget.org
-    dependsOn: 
-      - Build
+  - stage: Deploy
+    displayName: Deploy
     jobs:
-    - deployment: Deploy
+    - deployment: DeployNuGet
+      displayName: 'Deploy to nuget.org'
       environment: NuGet
       strategy: 
         runOnce:
@@ -84,12 +83,8 @@ stages:
                 publishFeedCredentials: 'nuget.org'
                 allowPackageConflicts: true
 
-  - stage: DeployAzureArtifacts
-    displayName: Deploy to Azure Artifacts
-    dependsOn: 
-      - Build
-    jobs:
-    - deployment: Deploy
+    - deployment: DeployAzureArtifacts
+      displayName: 'Deploy to Azure Artifacts'
       environment: AzureArtifacts
       strategy: 
         runOnce:
