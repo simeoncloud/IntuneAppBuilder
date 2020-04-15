@@ -1,8 +1,8 @@
 ﻿using System.IO;
 
-namespace IntuneAppBuilder.Util
+namespace IntuneAppBuilder.IntegrationTests.Util
 {
-    public static class FileUtil
+    internal static class FileUtil
     {
         /// <summary>
         ///     Creates directory if it doesn't exist, empties directory if it does.

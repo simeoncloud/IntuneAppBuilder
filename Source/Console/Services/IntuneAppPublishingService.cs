@@ -48,6 +48,9 @@ namespace IntuneAppBuilder.Services
                 // partially committed content - delete that content version
                 await requestBuilder.ContentVersions[content.Id].Request().DeleteAsync();
 
+            // manifests are only supported if the app is a WindowsMobileMSI (not a Win32 app installing an msi)
+            if (!(app is WindowsMobileMSI)) package.File.Manifest = null;
+
             await CreateAppContentFileAsync(requestBuilder.ContentVersions[content.Id], package);
 
             MobileLobApp update = (MobileLobApp)Activator.CreateInstance(package.App.GetType());
@@ -100,8 +103,8 @@ namespace IntuneAppBuilder.Services
             {
                 // set required properties with default values if not already specified - can be changed later in the portal
                 win32.InstallExperience ??= new Win32LobAppInstallExperience { RunAsAccount = RunAsAccountType.System };
-                win32.InstallCommandLine ??= win32.SetupFilePath;
-                win32.UninstallCommandLine ??= "n/a";
+                win32.InstallCommandLine ??= win32.MsiInformation == null ? win32.SetupFilePath : $"msiexec /i \"{win32.SetupFilePath}\"";
+                win32.UninstallCommandLine ??= win32.MsiInformation == null ? "echo Not Supported" : $"msiexec /x \"{win32.MsiInformation.ProductCode}\"";
                 win32.Publisher ??= "-";
                 win32.ApplicableArchitectures = WindowsArchitecture.X86 | WindowsArchitecture.X64;
                 win32.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V10_1607 = true };

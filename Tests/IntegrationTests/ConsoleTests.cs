@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using IntuneAppBuilder.IntegrationTests.Util;
-using IntuneAppBuilder.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
@@ -69,13 +68,13 @@ namespace IntuneAppBuilder.IntegrationTests
 
                 await Program.PackAsync(new FileSystemInfo[] { new FileInfo("wvd.msi") }, ".", GetServices());
 
-                Assert.True(File.Exists("Remote Desktop.intunewin"));
-                Assert.True(File.Exists("Remote Desktop.portal.intunewin"));
-                Assert.True(File.Exists("Remote Desktop.intunewin.json"));
+                Assert.True(File.Exists("wvd.intunewin"));
+                Assert.True(File.Exists("wvd.portal.intunewin"));
+                Assert.True(File.Exists("wvd.intunewin.json"));
 
-                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("Remote Desktop.intunewin.json") }, GetServices());
+                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("wvd.intunewin.json") }, GetServices());
                 // publish second time to test udpating
-                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("Remote Desktop.intunewin.json") }, GetServices());
+                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("wvd.intunewin.json") }, GetServices());
             });
         }
 
@@ -88,17 +87,18 @@ namespace IntuneAppBuilder.IntegrationTests
                 var http = new HttpClient();
                 var tempPath = Path.Combine(Path.GetTempPath(), "wvd.msi");
                 if (!File.Exists(tempPath)) await http.DownloadFileAsync("https://aka.ms/wvdclient", tempPath);
-                File.Copy(tempPath, "wvd.msi");
+                Directory.CreateDirectory("wvd");
+                File.Copy(tempPath, "wvd/wvd.msi");
 
-                await Program.PackAsync(new FileSystemInfo[] { new DirectoryInfo(".") }, ".", GetServices());
+                await Program.PackAsync(new FileSystemInfo[] { new DirectoryInfo("wvd") }, ".", GetServices());
 
-                Assert.True(File.Exists("Remote Desktop.intunewin"));
-                Assert.True(File.Exists("Remote Desktop.portal.intunewin"));
-                Assert.True(File.Exists("Remote Desktop.intunewin.json"));
+                Assert.True(File.Exists("wvd.intunewin"));
+                Assert.True(File.Exists("wvd.portal.intunewin"));
+                Assert.True(File.Exists("wvd.intunewin.json"));
 
-                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("Remote Desktop.intunewin.json") }, GetServices());
+                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("wvd.intunewin.json") }, GetServices());
                 // publish second time to test udpating
-                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("Remote Desktop.intunewin.json") }, GetServices());
+                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("wvd.intunewin.json") }, GetServices());
             });
         }
     }

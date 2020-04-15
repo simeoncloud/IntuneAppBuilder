@@ -59,13 +59,13 @@ namespace IntuneAppBuilder
             AddBuilders(sources, services);
 
             var sp = services.BuildServiceProvider();
-            foreach (var builder in sp.GetRequiredService<IEnumerable<IIntuneAppPackageBuilder>>()) await BuildAsync(builder, sp.GetRequiredService<IIntuneAppPackagingService>(), output);
+            foreach (var builder in sp.GetRequiredService<IEnumerable<IIntuneAppPackageBuilder>>()) await BuildAsync(builder, sp.GetRequiredService<IIntuneAppPackagingService>(), output, GetLogger(sp));
         }
 
         /// <summary>
         ///     Invokes the builder in a dedicated working directory.
         /// </summary>
-        private static async Task BuildAsync(IIntuneAppPackageBuilder builder, IIntuneAppPackagingService packagingService, string output)
+        private static async Task BuildAsync(IIntuneAppPackageBuilder builder, IIntuneAppPackagingService packagingService, string output, ILogger logger)
         {
             var cd = Environment.CurrentDirectory;
             Environment.CurrentDirectory = output;
@@ -74,13 +74,17 @@ namespace IntuneAppBuilder
                 var package = await builder.BuildAsync();
                 package.Data.Position = 0;
 
-                File.WriteAllText($"{package.App.FileName}.json", JsonConvert.SerializeObject(package, Formatting.Indented));
+                var baseFileName = Path.GetFileNameWithoutExtension(package.App.FileName);
 
-                await using (var fs = File.Open(package.App.FileName, FileMode.Create, FileAccess.Write, FileShare.Read))
+                File.WriteAllText($"{baseFileName}.intunewin.json", JsonConvert.SerializeObject(package, Formatting.Indented));
+
+                await using (var fs = File.Open($"{baseFileName}.intunewin", FileMode.Create, FileAccess.Write, FileShare.Read))
                     await package.Data.CopyToAsync(fs);
 
-                await using (var fs = File.Open($"{Path.GetFileNameWithoutExtension(package.App.FileName)}.portal.intunewin", FileMode.Create, FileAccess.Write, FileShare.Read))
+                await using (var fs = File.Open($"{baseFileName}.portal.intunewin", FileMode.Create, FileAccess.Write, FileShare.Read))
                     await packagingService.BuildPackageForPortalAsync(package, fs);
+
+                logger.LogInformation($"Finished writing {baseFileName} package files to {output}.");
             }
             finally
             {
@@ -131,7 +135,7 @@ namespace IntuneAppBuilder
             logger.LogInformation($"Loading package from file {file.FullName}.");
 
             var package = JsonConvert.DeserializeObject<IntuneAppPackage>(File.ReadAllText(file.FullName));
-            var dataPath = Path.Combine(file.DirectoryName, package.App.FileName);
+            var dataPath = Path.Combine(file.DirectoryName, Path.GetFileNameWithoutExtension(file.FullName));
             if (!File.Exists(dataPath)) throw new FileNotFoundException($"Could not find data file at {dataPath}.");
             logger.LogInformation($"Using package data file {dataPath}");
             package.Data = File.Open(dataPath, FileMode.Open, FileAccess.Read, FileShare.Read);

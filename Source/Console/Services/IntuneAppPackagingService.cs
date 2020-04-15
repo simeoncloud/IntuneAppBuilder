@@ -29,7 +29,8 @@ namespace IntuneAppBuilder.Services
         {
             var sw = Stopwatch.StartNew();
 
-            logger.LogInformation($"Creating Intune app package from {Path.GetFullPath(sourcePath)}.");
+            var originalSourcePath = Path.GetFullPath(sourcePath);
+            logger.LogInformation($"Creating Intune app package from {originalSourcePath}.");
 
             var name = Path.GetFileNameWithoutExtension(Path.GetFullPath(sourcePath));
 
@@ -57,26 +58,27 @@ namespace IntuneAppBuilder.Services
                 {
                     ProductCode = msiInfo.Info.ProductCode,
                     ProductVersion = msiInfo.Info.ProductVersion,
-                    IdentityVersion = msiInfo.Info.ProductVersion
+                    IdentityVersion = msiInfo.Info.ProductVersion,
+                    FileName = Path.GetFileName(setupFilePath)
                 } as MobileLobApp
                 : new Win32LobApp
                 {
+                    FileName = $"{name}.intunewin",
                     SetupFilePath = Path.GetFileName(setupFilePath),
                     MsiInformation = msiInfo.Info,
+                    InstallExperience = new Win32LobAppInstallExperience { RunAsAccount = GetRunAsAccountType(msiInfo) },
                 };
 
             app.DisplayName = msiInfo.Info?.ProductName ?? name;
             app.Publisher = msiInfo.Info?.Publisher;
-            app.FileName = $"{ToValidFileName(app.DisplayName)}.intunewin";
 
             var file = new MobileAppContentFile
             {
                 Name = app.FileName,
                 Size = new FileInfo(sourcePath).Length,
-                SizeEncrypted = data.Length
+                SizeEncrypted = data.Length,
+                Manifest = msiInfo.Manifest?.ToByteArray()
             };
-
-            if (app is WindowsMobileMSI) file.Manifest = msiInfo.Manifest.ToByteArray();
 
             var result = new IntuneAppPackage
             {
@@ -88,14 +90,16 @@ namespace IntuneAppBuilder.Services
 
             if (zip.ZipFilePath != null) File.Delete(zip.ZipFilePath);
 
-            logger.LogInformation($"Created Intune app package for {app.DisplayName} in {sw.ElapsedMilliseconds}ms.");
+            logger.LogInformation($"Created Intune app package from {originalSourcePath} in {sw.ElapsedMilliseconds}ms.");
 
             return result;
         }
 
         public async Task BuildPackageForPortalAsync(IntuneAppPackage package, Stream outputStream)
         {
-            logger.LogInformation($"Building Intune portal package for {package.App.DisplayName}.");
+            var sw = Stopwatch.StartNew();
+
+            logger.LogInformation($"Creating Intune portal package for {package.App.FileName}.");
 
             using var archive = new ZipArchive(outputStream, ZipArchiveMode.Create);
 
@@ -109,13 +113,12 @@ namespace IntuneAppBuilder.Services
             var detectionEntry = archive.CreateEntry("IntuneWinPackage/Metadata/Detection.xml", CompressionLevel.NoCompression);
             using (var detectionEntryStream = detectionEntry.Open())
             {
-                using var sw = new StreamWriter(detectionEntryStream);
-                await sw.WriteAsync(GetDetectionXml(package));
+                using var writer = new StreamWriter(detectionEntryStream);
+                await writer.WriteAsync(GetDetectionXml(package));
             }
-        }
 
-        private static string ToValidFileName(string appDisplayName)
-            => new string(appDisplayName.Where(c => !Path.GetInvalidPathChars().Contains(c)).ToArray());
+            logger.LogInformation($"Created Intune portal package for {package.App.FileName} in {sw.ElapsedMilliseconds}ms.");
+        }
 
         private (string ZipFilePath, string SetupFilePath) ZipContent(string sourcePath, string setupFilePath)
         {
@@ -197,24 +200,6 @@ namespace IntuneAppBuilder.Services
                 }
 
             return FormatXml(xml);
-        }
-
-        private static string FormatXml(XmlDocument doc)
-        {
-            StringBuilder sb = new StringBuilder();
-            XmlWriterSettings settings = new XmlWriterSettings
-            {
-                Indent = true,
-                IndentChars = "  ",
-                NewLineChars = "\r\n",
-                NewLineHandling = NewLineHandling.Replace,
-                OmitXmlDeclaration = true
-            };
-            using (XmlWriter writer = XmlWriter.Create(sb, settings))
-            {
-                doc.Save(writer);
-            }
-            return sb.ToString();
         }
 
         /// <summary>
@@ -299,5 +284,25 @@ namespace IntuneAppBuilder.Services
                 };
             }
         }
+
+        private static string FormatXml(XmlDocument doc)
+        {
+            StringBuilder sb = new StringBuilder();
+            XmlWriterSettings settings = new XmlWriterSettings
+            {
+                Indent = true,
+                IndentChars = "  ",
+                NewLineChars = "\r\n",
+                NewLineHandling = NewLineHandling.Replace,
+                OmitXmlDeclaration = true
+            };
+            using (XmlWriter writer = XmlWriter.Create(sb, settings))
+            {
+                doc.Save(writer);
+            }
+            return sb.ToString();
+        }
+
+        private static RunAsAccountType GetRunAsAccountType((Win32LobAppMsiInformation Info, MobileMsiManifest Manifest) msiInfo) => msiInfo.Info?.PackageType == Win32LobAppMsiPackageType.PerUser ? RunAsAccountType.User : RunAsAccountType.System;
     }
 }
