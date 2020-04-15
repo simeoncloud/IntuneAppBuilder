@@ -15,7 +15,7 @@ namespace IntuneAppBuilder.Builders
         private readonly string path;
         private readonly IIntuneAppPackagingService packagingService;
 
-        public PathIntuneAppPackageBuilder(string path, IIntuneAppPackagingService packagingService, string name = null)
+        public PathIntuneAppPackageBuilder(string path, IIntuneAppPackagingService packagingService)
         {
             Name = Path.GetFullPath(path);
             this.path = path;

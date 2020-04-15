@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Source\Console\Console.csproj" />
+    <ProjectReference Include="..\..\Source\Tool\Tool.csproj" />
   </ItemGroup>
 
 </Project>

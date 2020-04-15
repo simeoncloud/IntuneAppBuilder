@@ -138,7 +138,7 @@ namespace IntuneAppBuilder.Services
 
         private (Win32LobAppMsiInformation Info, MobileMsiManifest Manifest) GetMsiInfo(string setupFilePath)
         {
-            if (Path.GetExtension(setupFilePath).Equals(".msi", StringComparison.OrdinalIgnoreCase))
+            if (".msi".Equals(Path.GetExtension(setupFilePath), StringComparison.OrdinalIgnoreCase))
                 using (var util = new MsiUtil(setupFilePath, logger))
                 {
                     return util.ReadMsiInfo();
@@ -165,7 +165,7 @@ namespace IntuneAppBuilder.Services
             }
 
             var infoElement = AppendElement(xml, "ApplicationInfo");
-            xml.DocumentElement.SetAttribute("ToolVersion", "1.4.0.0");
+            xml.DocumentElement?.SetAttribute("ToolVersion", "1.4.0.0");
             AppendElement(infoElement, "Name", package.App.DisplayName);
             AppendElement(infoElement, "UnencryptedContentSize", package.File.Size);
             AppendElement(infoElement, "FileName", "IntunePackage.intunewin");
@@ -194,7 +194,11 @@ namespace IntuneAppBuilder.Services
                     writer.WriteWhitespace("");
 
                     var overrides = new XmlAttributeOverrides();
-                    typeof(MobileMsiManifest).GetProperties().ToList().ForEach(p => overrides.Add(p.DeclaringType, p.Name, new XmlAttributes()));
+                    typeof(MobileMsiManifest).GetProperties().ToList().ForEach(p =>
+                    {
+                        if (p.DeclaringType != null)
+                            overrides.Add(p.DeclaringType, p.Name, new XmlAttributes());
+                    });
                     new XmlSerializer(typeof(MobileMsiManifest), overrides, new Type[0], new XmlRootAttribute("MsiInfo"), string.Empty)
                         .Serialize(writer, MobileMsiManifest.FromByteArray(package.File.Manifest), namespaces);
                 }

@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace IntuneAppBuilder
+namespace IntuneAppBuilder.Tool
 {
     internal static class Program
     {

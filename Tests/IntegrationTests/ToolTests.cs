@@ -12,12 +12,13 @@ using Xunit.Abstractions;
 using Directory = System.IO.Directory;
 using File = System.IO.File;
 using FileSystemInfo = System.IO.FileSystemInfo;
+using Program = IntuneAppBuilder.Tool.Program;
 
 namespace IntuneAppBuilder.IntegrationTests
 {
-    public class ConsoleTests
+    public class ToolTests
     {
-        public ConsoleTests(ITestOutputHelper testOutputHelper) => this.testOutputHelper = testOutputHelper;
+        public ToolTests(ITestOutputHelper testOutputHelper) => this.testOutputHelper = testOutputHelper;
 
         private readonly ITestOutputHelper testOutputHelper;
 
