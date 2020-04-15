@@ -9,6 +9,7 @@ stages:
   - stage: Build
     jobs:
     - job:
+      displayName: Build
       steps:
         - task: UseGitVersion@5
           displayName: GitVersion
@@ -68,7 +69,7 @@ stages:
     dependsOn: 
       - Build
     jobs:
-    - deployment: Job
+    - deployment: Deploy
       environment: NuGet
       strategy: 
         runOnce:
@@ -88,7 +89,7 @@ stages:
     dependsOn: 
       - Build
     jobs:
-    - deployment: Job
+    - deployment: Deploy
       environment: AzureArtifacts
       strategy: 
         runOnce:
