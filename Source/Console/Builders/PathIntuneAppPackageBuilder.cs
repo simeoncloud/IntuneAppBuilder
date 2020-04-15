@@ -17,7 +17,7 @@ namespace IntuneAppBuilder.Builders
 
         public PathIntuneAppPackageBuilder(string path, IIntuneAppPackagingService packagingService, string name = null)
         {
-            Name = name ?? Path.GetFileNameWithoutExtension(Path.GetFullPath(path));
+            Name = Path.GetFullPath(path);
             this.path = path;
             this.packagingService = packagingService;
         }

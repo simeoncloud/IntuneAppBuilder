@@ -29,7 +29,11 @@ namespace IntuneAppBuilder.Services
         /// <inheritdoc />
         public async Task PublishAsync(IntuneAppPackage package)
         {
+            logger.LogInformation($"Publishing Intune app package for {package.App.DisplayName}.");
+
             var app = await GetAppAsync(package.App);
+
+            var sw = Stopwatch.StartNew();
 
             var requestBuilder = new MobileLobAppRequestBuilder(msGraphClient.DeviceAppManagement.MobileApps[app.Id]
                 .AppendSegmentToRequestUrl(app.ODataType.TrimStart('#')), msGraphClient);
@@ -49,6 +53,8 @@ namespace IntuneAppBuilder.Services
             MobileLobApp update = (MobileLobApp)Activator.CreateInstance(package.App.GetType());
             update.CommittedContentVersion = content.Id;
             await msGraphClient.DeviceAppManagement.MobileApps[app.Id].Request().UpdateAsync(update);
+
+            logger.LogInformation($"Published Intune app package for {app.DisplayName} in {sw.ElapsedMilliseconds}ms.");
         }
 
         /// <summary>
@@ -72,14 +78,15 @@ namespace IntuneAppBuilder.Services
             {
                 SetDefaults(app);
                 // create new
-                logger.LogInformation($"Creating new app: {app.DisplayName}.");
+                logger.LogInformation($"App {app.DisplayName} does not exist - creating new app.");
                 result = (MobileLobApp)await msGraphClient.DeviceAppManagement.MobileApps.Request().AddAsync(app);
             }
-            else
+
+            if (app.ODataType.TrimStart('#') != result.ODataType.TrimStart('#'))
             {
-                logger.LogInformation($"Using existing app: {result.DisplayName}.");
+                throw new NotSupportedException($"Found existing application {result.DisplayName}, but it of type {result.ODataType.TrimStart('#')} and the app being deployed is of type {app.ODataType.TrimStart('#')} - delete the existing app and try again.");
             }
-            
+
             return result;
         }
 
@@ -172,7 +179,7 @@ namespace IntuneAppBuilder.Services
 
             await CreateBlobAsync(package, contentFile);
 
-            logger.LogInformation($"Uploaded app content in {sw.ElapsedMilliseconds}ms.");
+            logger.LogInformation($"Uploaded app content file in {sw.ElapsedMilliseconds}ms.");
 
             // commit
             await requestBuilder.Files[contentFile.Id].Commit(package.EncryptionInfo).Request().PostAsync();
@@ -217,7 +224,7 @@ namespace IntuneAppBuilder.Services
                 }
                 catch (StorageException ex)
                 {
-                    if (!new[] {307, 403, 400}.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 30) throw;
+                    if (!new[] { 307, 403, 400 }.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 30) throw;
                     stream.Position = position;
                     await Task.Delay(10000);
                 }
