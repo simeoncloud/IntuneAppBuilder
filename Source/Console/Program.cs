@@ -59,15 +59,14 @@ namespace IntuneAppBuilder
             AddBuilders(sources, services);
 
             var sp = services.BuildServiceProvider();
-            foreach (var builder in sp.GetRequiredService<IEnumerable<IIntuneAppPackageBuilder>>()) await BuildAsync(builder, sp.GetRequiredService<IIntuneAppPackagingService>(), output, GetLogger(sp));
+            foreach (var builder in sp.GetRequiredService<IEnumerable<IIntuneAppPackageBuilder>>()) await BuildAsync(builder, sp.GetRequiredService<IIntuneAppPackagingService>(), output);
         }
 
         /// <summary>
         ///     Invokes the builder in a dedicated working directory.
         /// </summary>
-        private static async Task BuildAsync(IIntuneAppPackageBuilder builder, IIntuneAppPackagingService packagingService, string output, ILogger logger)
+        private static async Task BuildAsync(IIntuneAppPackageBuilder builder, IIntuneAppPackagingService packagingService, string output)
         {
-            logger.LogInformation($"Building app content for {builder.Name}.");
             var cd = Environment.CurrentDirectory;
             Environment.CurrentDirectory = output;
             try
@@ -96,23 +95,11 @@ namespace IntuneAppBuilder
         /// <param name="services"></param>
         internal static void AddBuilders(IEnumerable<FileSystemInfo> sources, IServiceCollection services)
         {
-            var logger = GetLogger(services.BuildServiceProvider());
             foreach (var source in sources)
             {
                 if (!source.Exists) throw new InvalidOperationException($"{source.FullName} does not exist.");
 
-                if (new[] { ".dll", ".exe" }.Contains(source.Extension.ToLower()) && source.Exists)
-                {
-                    // assembly source
-                    logger.LogInformation($"Loading assembly {source}.");
-                    var a = Assembly.LoadFrom(source.FullName);
-                    foreach (var type in a.GetTypes().Where(t => !t.IsAbstract && typeof(IIntuneAppPackageBuilder).IsAssignableFrom(t)))
-                    {
-                        logger.LogInformation($"Registering {nameof(IIntuneAppPackageBuilder)} {type.Name}.");
-                        services.AddTransient(typeof(IIntuneAppPackageBuilder), type);
-                    }
-                }
-                else if (source.Extension.Equals(".msi", StringComparison.OrdinalIgnoreCase) || source is DirectoryInfo)
+                if (source.Extension.Equals(".msi", StringComparison.OrdinalIgnoreCase) || source is DirectoryInfo)
                 {
                     services.AddSingleton<IIntuneAppPackageBuilder>(sp => ActivatorUtilities.CreateInstance<PathIntuneAppPackageBuilder>(sp, source.FullName));
                 }
@@ -134,20 +121,20 @@ namespace IntuneAppBuilder
             sourceFiles.AddRange(sources.OfType<DirectoryInfo>().SelectMany(di => di.EnumerateFiles("*.intunewin.json", SearchOption.AllDirectories)));
             foreach (var file in sourceFiles)
             {
-                logger.LogInformation($"Publishing package from file {file.FullName}.");
                 using var package = ReadPackage(file, logger);
                 await publishingService.PublishAsync(package);
-                logger.LogInformation("Done publishing package.");
             }
         }
 
         private static IntuneAppPackage ReadPackage(FileInfo file, ILogger logger)
         {
+            logger.LogInformation($"Loading package from file {file.FullName}.");
+
             var package = JsonConvert.DeserializeObject<IntuneAppPackage>(File.ReadAllText(file.FullName));
             var dataPath = Path.Combine(file.DirectoryName, package.App.FileName);
             if (!File.Exists(dataPath)) throw new FileNotFoundException($"Could not find data file at {dataPath}.");
             logger.LogInformation($"Using package data file {dataPath}");
-            package.Data = File.Open(package.App.FileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            package.Data = File.Open(dataPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             return package;
         }
 

@@ -29,6 +29,8 @@ namespace IntuneAppBuilder.Services
         {
             var sw = Stopwatch.StartNew();
 
+            logger.LogInformation($"Creating Intune app package from {Path.GetFullPath(sourcePath)}.");
+
             var name = Path.GetFileNameWithoutExtension(Path.GetFullPath(sourcePath));
 
             var zip = ZipContent(sourcePath, setupFilePath);
@@ -47,8 +49,6 @@ namespace IntuneAppBuilder.Services
             var data = new MemoryStream();
             var encryptionInfo = await EncryptFileAsync(sourcePath, data);
             data.Position = 0;
-
-            logger.LogInformation($"Created Intune app package in {sw.ElapsedMilliseconds}ms.");
 
             var msiInfo = GetMsiInfo(setupFilePath);
 
@@ -88,12 +88,14 @@ namespace IntuneAppBuilder.Services
 
             if (zip.ZipFilePath != null) File.Delete(zip.ZipFilePath);
 
+            logger.LogInformation($"Created Intune app package for {app.DisplayName} in {sw.ElapsedMilliseconds}ms.");
+
             return result;
         }
 
         public async Task BuildPackageForPortalAsync(IntuneAppPackage package, Stream outputStream)
         {
-            logger.LogInformation($"Building portal package for {package.App.DisplayName}.");
+            logger.LogInformation($"Building Intune portal package for {package.App.DisplayName}.");
 
             using var archive = new ZipArchive(outputStream, ZipArchiveMode.Create);
 
