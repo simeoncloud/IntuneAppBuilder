@@ -27,7 +27,7 @@ namespace IntuneAppBuilder.Services
         }
 
         /// <inheritdoc />
-        public async Task PublishAsync(MobileLobAppContentFilePackage package)
+        public async Task PublishAsync(IntuneAppPackage package)
         {
             var app = await GetAppAsync(package.App);
 
@@ -125,7 +125,7 @@ namespace IntuneAppBuilder.Services
             }
         }
 
-        private async Task CreateAppContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, MobileLobAppContentFilePackage package)
+        private async Task CreateAppContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
         {
             // add content file
             var contentFile = await AddContentFileAsync(requestBuilder, package);
@@ -181,7 +181,7 @@ namespace IntuneAppBuilder.Services
             await WaitForStateAsync(MobileAppContentFileUploadState.CommitFileSuccess);
         }
 
-        private async Task CreateBlobAsync(MobileLobAppContentFilePackage package, MobileAppContentFile contentFile)
+        private async Task CreateBlobAsync(IntuneAppPackage package, MobileAppContentFile contentFile)
         {
             var blockCount = 0;
             var blockIds = new List<string>();
@@ -223,7 +223,7 @@ namespace IntuneAppBuilder.Services
                 }
         }
 
-        private async Task<MobileAppContentFile> AddContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, MobileLobAppContentFilePackage package)
+        private async Task<MobileAppContentFile> AddContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
         {
             return await requestBuilder.Files.Request()
                 .WithMaxRetry(10)
