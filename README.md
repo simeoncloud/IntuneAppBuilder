@@ -14,7 +14,7 @@ IntuneAppBuilder is an open source component from the Simeon Microsoft 365 Manag
 
 2. **Install** from an elevated command prompt
 ```
-dotnet tool install -g IntuneAppBuilder
+dotnet tool install -g IntuneAppBuilder.Tool
 IntuneAppBuilder [args]
 ```
 
