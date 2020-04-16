@@ -5,6 +5,10 @@
 		<AssemblyName>$(SolutionName)</AssemblyName>
 		<RootNamespace>$(AssemblyName)</RootNamespace>
 		<NoWarn>$(NoWarn);NU5104</NoWarn>
+		<Authors>Simeon</Authors>
+		<Description>
+			IntuneAppBuilder creates and deploys Intune packages for MSI and Win32 applications. The tool converts installation files into the .intunewin format that can then be published using the tool or uploaded manually into the Intune Portal.
+		</Description>
 	</PropertyGroup>
 
 	<ItemGroup>
