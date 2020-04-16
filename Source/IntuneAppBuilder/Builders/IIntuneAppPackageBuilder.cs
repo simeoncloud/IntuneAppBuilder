@@ -19,12 +19,6 @@ namespace IntuneAppBuilder.Builders
         ///     Builds an app package. The call to BuildAsync is invoked with Environment.CurrentDirectory set to a dedicated,
         ///     transient temp directory created by the caller.
         /// </summary>
-        Task<IntuneAppPackage> BuildAsync();
-
-        /// <summary>
-        ///     Builds an app package. The call to BuildAsync is invoked with Environment.CurrentDirectory set to a dedicated,
-        ///     transient temp directory created by the caller.
-        /// </summary>
-        Task<IntuneAppPackage> BuildAsync(MobileLobApp app) => BuildAsync();
+        Task<IntuneAppPackage> BuildAsync(MobileLobApp app);
     }
 }

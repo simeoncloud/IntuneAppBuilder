@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using IntuneAppBuilder.Domain;
 using IntuneAppBuilder.Services;
+using Microsoft.Graph;
 
 namespace IntuneAppBuilder.Builders
 {
@@ -22,6 +23,6 @@ namespace IntuneAppBuilder.Builders
             this.packagingService = packagingService;
         }
 
-        public Task<IntuneAppPackage> BuildAsync() => packagingService.BuildPackageAsync(path);
+        public Task<IntuneAppPackage> BuildAsync(MobileLobApp app) => packagingService.BuildPackageAsync(path);
     }
 }

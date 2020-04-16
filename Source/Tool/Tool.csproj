@@ -7,7 +7,7 @@
 		<ToolCommandName>$(SolutionName)</ToolCommandName>
 		<Authors>Simeon</Authors>
 		<Description>
-			IntuneAppBuilder creates and deploys Intune packages for MSI and Win32 applications. The tool converts installation files into the .intunewin format that can then be published using the tool or uploaded manually into the Intune Portal.
+			IntuneAppBuilder creates and deploys Intune packages for MSI and Win32 applications. This dotnet tool converts installation files into the .intunewin format that can then be published using the tool or uploaded manually into the Intune Portal.
 		</Description>
 		<NoWarn>$(NoWarn);NU5104</NoWarn>
 	</PropertyGroup>

@@ -71,7 +71,7 @@ namespace IntuneAppBuilder.Tool
             Environment.CurrentDirectory = output;
             try
             {
-                var package = await builder.BuildAsync();
+                var package = await builder.BuildAsync(null);
                 package.Data.Position = 0;
 
                 var baseFileName = Path.GetFileNameWithoutExtension(package.App.FileName);

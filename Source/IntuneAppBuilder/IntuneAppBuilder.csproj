@@ -7,7 +7,7 @@
 		<NoWarn>$(NoWarn);NU5104</NoWarn>
 		<Authors>Simeon</Authors>
 		<Description>
-			IntuneAppBuilder creates and deploys Intune packages for MSI and Win32 applications. 
+			IntuneAppBuilder creates and deploys Intune packages for MSI and Win32 applications. This package exposes services that can be consumed by other dotnet applications as a package reference.
 		</Description>
 	</PropertyGroup>
 
