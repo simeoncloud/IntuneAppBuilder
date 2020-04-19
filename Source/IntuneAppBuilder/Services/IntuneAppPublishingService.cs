@@ -90,6 +90,8 @@ namespace IntuneAppBuilder.Services
                 throw new NotSupportedException($"Found existing application {result.DisplayName}, but it of type {result.ODataType.TrimStart('#')} and the app being deployed is of type {app.ODataType.TrimStart('#')} - delete the existing app and try again.");
             }
 
+            logger.LogInformation($"Using app {result.Id} ({result.DisplayName}).");
+
             return result;
         }
 

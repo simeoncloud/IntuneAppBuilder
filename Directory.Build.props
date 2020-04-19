@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<SlnFiles>$([System.IO.Directory]::GetFiles('$(MSBuildThisFileDirectory)', '*.sln'))</SlnFiles>
 		<SolutionName Condition="'$(SolutionName)' == ''">$([System.IO.Path]::GetFileNameWithoutExtension($(SlnFiles)))</SolutionName>
-		<AssemblyName>IntuneAppBuilder.$(MSBuildProjectName)</AssemblyName>
+		<AssemblyName>$(SolutionName).$(MSBuildProjectName)</AssemblyName>
 		<RootNamespace>$(AssemblyName)</RootNamespace>
 	</PropertyGroup>
 
@@ -10,6 +10,17 @@
 		<!-- https://github.com/SonarSource/sonar-dotnet/issues/2426 -->
 		<NoWarn>$(NoWarn);AD0001</NoWarn>
 	</PropertyGroup>
+
+	<PropertyGroup>
+		<Repository>https://github.com/simeoncloud/IntuneAppBuilder</Repository>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />

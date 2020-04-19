@@ -77,7 +77,7 @@ stages:
               displayName: Push
               inputs:
                 command: 'push'
-                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'               
+                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg;$(Pipeline.Workspace)/**/*.snupkg'
                 feedPublish: 'simeoncloud'
                 allowPackageConflicts: true
 
@@ -94,7 +94,7 @@ stages:
               displayName: Push
               inputs:
                 command: 'push'
-                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
+                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg;$(Pipeline.Workspace)/**/*.snupkg'
                 nuGetFeedType: 'external'
                 publishFeedCredentials: 'nuget.org'
                 allowPackageConflicts: true
