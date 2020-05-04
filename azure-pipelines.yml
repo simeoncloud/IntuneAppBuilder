@@ -1,3 +1,11 @@
+schedules:
+- cron: "0 6 * * *"
+  displayName: Daily job
+  branches:
+    include:
+    - master
+  always: true
+
 pool:
   vmImage: 'windows-latest'
 
