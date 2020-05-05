@@ -62,6 +62,7 @@ namespace IntuneAppBuilder.IntegrationTests
             await ExecuteInDirectory(nameof(Msi), async () =>
             {
                 await DeleteAppAsync("Remote Desktop");
+
                 var http = new HttpClient();
                 var tempPath = Path.Combine(Path.GetTempPath(), "wvd.msi");
                 if (!File.Exists(tempPath)) await http.DownloadFileAsync("https://aka.ms/wvdclient", tempPath);
@@ -76,6 +77,8 @@ namespace IntuneAppBuilder.IntegrationTests
                 await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("wvd.intunewin.json") }, GetServices());
                 // publish second time to test udpating
                 await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("wvd.intunewin.json") }, GetServices());
+
+                await DeleteAppAsync("Remote Desktop");
             });
         }
 
@@ -85,6 +88,7 @@ namespace IntuneAppBuilder.IntegrationTests
             await ExecuteInDirectory(nameof(Win32), async () =>
             {
                 await DeleteAppAsync("Remote Desktop");
+
                 var http = new HttpClient();
                 var tempPath = Path.Combine(Path.GetTempPath(), "wvd.msi");
                 if (!File.Exists(tempPath)) await http.DownloadFileAsync("https://aka.ms/wvdclient", tempPath);
@@ -100,6 +104,8 @@ namespace IntuneAppBuilder.IntegrationTests
                 await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("wvd.intunewin.json") }, GetServices());
                 // publish second time to test udpating
                 await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("wvd.intunewin.json") }, GetServices());
+
+                await DeleteAppAsync("Remote Desktop");
             });
         }
     }
