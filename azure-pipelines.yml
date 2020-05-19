@@ -18,10 +18,6 @@ stages:
     jobs:
     - job:
       steps:
-        - task: UseGitVersion@5
-          displayName: GitVersion
-          inputs:
-            versionSpec: '5.x'
             
         - task: DotNetCoreCLI@2
           displayName: dotnet build
