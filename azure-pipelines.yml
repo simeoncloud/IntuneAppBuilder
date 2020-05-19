@@ -24,9 +24,7 @@ stages:
           inputs:
             command: build
             arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)'
-          env:
-            Version: $(GitVersion.SemVer)
-            
+
         - task: DotNetCoreCLI@2
           displayName: dotnet pack
           inputs:
@@ -35,8 +33,6 @@ stages:
             packagesToPack: '*.sln'
             configurationToPack: $(BuildConfiguration)
             nobuild: true
-          env:
-            Version: $(GitVersion.SemVer)
           
         - task: DotNetCoreCLI@2
           displayName: dotnet publish
@@ -47,9 +43,7 @@ stages:
             zipAfterPublish: false
             modifyOutputPath: true
             projects: '**/*/*.csproj'
-          env:
-            Version: $(GitVersion.SemVer)
-                      
+
         - task: DotNetCoreCLI@2
           displayName: dotnet test
           inputs:
