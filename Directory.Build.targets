@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SonarAnalyzer.CSharp" Version="7.10.*" />
+    <PackageReference Include="GitVersionTask" Version="5.3.3" />
   </ItemGroup>
 </Project>
