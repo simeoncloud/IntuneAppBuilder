@@ -1,11 +1,23 @@
 <Project>
-  <PropertyGroup>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)/default.ruleset</CodeAnalysisRuleSet>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="7.10.*" />
-    <PackageReference Include="GitVersionTask" Version="5.3.3" />
-  </ItemGroup>
+	<PropertyGroup>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)/default.ruleset</CodeAnalysisRuleSet>
+		<RunCodeAnalysis>true</RunCodeAnalysis>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="SonarAnalyzer.CSharp" Version="8.2.*" />
+	</ItemGroup>
+
+	<Target Name="GetVersion" BeforeTargets="DispatchToInnerBuilds;BeforeBuild;CoreBuild;GetAssemblyVersion;CoreCompile;GenerateNuspec;EnsureWixToolsetInstalled">
+		<!-- Keep restore separate and include extra property to prevent caching (restore and other targets in same MSBuild call is not a scenario supported by MSBuild) -->
+		<MSBuild Projects="$(MSBuildThisFileDirectory)/GitVersion.proj_" Targets="Restore" Properties="SolutionName=$(SolutionName);Restoring=true" />
+		<MSBuild Projects="$(MSBuildThisFileDirectory)/GitVersion.proj_" Targets="Build" Properties="SolutionName=$(SolutionName)">
+			<Output TaskParameter="TargetOutputs" PropertyName="Version" />
+		</MSBuild>
+		<PropertyGroup>
+			<PackageVersion>$(Version)</PackageVersion>
+		</PropertyGroup>
+		<Message Text="Setting version to $(Version)" Importance="high" />
+	</Target>
 </Project>
