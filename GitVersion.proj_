@@ -1,12 +1,12 @@
 <Project>
-  <PropertyGroup>
-    <BaseIntermediateOutputPath>$(Temp)/$(SolutionName)/GitVersion/obj</BaseIntermediateOutputPath>
-    <OutputPath>$(Temp)/$(SolutionName)/GitVersion/bin</OutputPath>
-  </PropertyGroup>
-  <Import Project="$(MSBuildBinPath)/Microsoft.Common.CurrentVersion.targets" />
-  <Import Project="$(BaseIntermediateOutputPath)/$(MSBuildThisFileName)$(MSBuildThisFileExtension).nuget.g.targets" Condition="Exists('$(BaseIntermediateOutputPath)/$(MSBuildThisFileName)$(MSBuildThisFileExtension).nuget.g.targets')" />
-  <ItemGroup>
-    <PackageReference Include="GitVersionTask" Version="5.3.3" />
-  </ItemGroup>
-  <Target Name="Build" DependsOnTargets="GetVersion;WriteVersionInfoToBuildLog" Returns="$(GitVersion_NuGetVersion)" />
+    <PropertyGroup>
+        <BaseIntermediateOutputPath>$(Temp)/$(SolutionName)/GitVersion/obj</BaseIntermediateOutputPath>
+        <OutputPath>$(Temp)/$(SolutionName)/GitVersion/bin</OutputPath>
+    </PropertyGroup>
+    <Import Project="$(MSBuildBinPath)/Microsoft.Common.CurrentVersion.targets" />
+    <Import Project="$(BaseIntermediateOutputPath)/$(MSBuildThisFileName)$(MSBuildThisFileExtension).nuget.g.targets" Condition="Exists('$(BaseIntermediateOutputPath)/$(MSBuildThisFileName)$(MSBuildThisFileExtension).nuget.g.targets')" />
+    <ItemGroup>
+        <PackageReference Include="GitVersionTask" Version="5.3.3" />
+    </ItemGroup>
+    <Target Name="Build" DependsOnTargets="GetVersion;WriteVersionInfoToBuildLog" Returns="$(GitVersion_NuGetVersion)" />
 </Project>
