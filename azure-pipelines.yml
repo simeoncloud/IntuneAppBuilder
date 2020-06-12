@@ -28,7 +28,7 @@ stages:
           displayName: dotnet build
           inputs:
             command: build
-            arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)'
+            arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)' --no-restore
 
         - task: DotNetCoreCLI@2
           displayName: dotnet pack
