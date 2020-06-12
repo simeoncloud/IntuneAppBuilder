@@ -18,7 +18,12 @@ stages:
     jobs:
     - job:
       steps:
-            
+        - task: DotNetCoreCLI@2
+          displayName: 'dotnet restore'
+          inputs:
+            command: restore
+            arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)'
+
         - task: DotNetCoreCLI@2
           displayName: dotnet build
           inputs:
