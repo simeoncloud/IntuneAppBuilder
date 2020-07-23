@@ -25,7 +25,7 @@ namespace IntuneAppBuilder.Console
             {
                 new Option<FileSystemInfo[]>(new[] {"--source", "-s"},
                         "Specifies a source to package. May be a directory with files for a Win32 app or a single msi file. May be specified multiple times.")
-                    {Name = "sources", Required = true},
+                    {Name = "sources", IsRequired = true},
                 new Option<string>(new[] {"--output", "-o"},
                     "Specifies an output directory for packaging artifacts. Each packaged application will exist as a raw intunewin file, a portal-ready portal.intunewin file, and an intunewin.json file containing metadata. Defaults to the working directory.")
             };
@@ -36,7 +36,7 @@ namespace IntuneAppBuilder.Console
             {
                 new Option<string[]>(new[] {"--source", "-s"},
                     "Specifies a source to publish. May be a directory with *.intunewin.json files or a single json file")
-                    {Name = "sources", Required = true}
+                    {Name = "sources", IsRequired = true}
             };
             publish.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PublishAsync), BindingFlags.Static | BindingFlags.NonPublic));
 
