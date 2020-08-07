@@ -1,6 +1,6 @@
 name: build
 on: 
-  push:
+  push
   schedule:
   - cron: 30 7 * * *
 
