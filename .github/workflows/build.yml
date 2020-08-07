@@ -1,8 +1,8 @@
 name: build
 on: 
-  push
+  push:
   schedule:
-  - cron: 30 7 * * *     
+  - cron: 30 7 * * *
 
 jobs:
   build:
@@ -15,8 +15,8 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.301
-    - name: Install dependencies
-      run: dotnet restore
+    - name: dotnet restore
+      run: dotnet restore --configuration $(BuildConfiguration) --verbosity $(Verbosity)
     - name: Build
       run: dotnet build --configuration Release --no-restore
     - name: Test
