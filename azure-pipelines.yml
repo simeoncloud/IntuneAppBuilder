@@ -14,88 +14,88 @@ variables:
   Verbosity: 'normal'
 
 stages:
-  - stage: Build
-    jobs:
-    - job:
-      steps:
-        - task: DotNetCoreCLI@2
-          displayName: 'dotnet restore'
-          inputs:
-            command: restore
-            arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)'
+- stage: Build
+  jobs:
+  - job:
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet restore'
+      inputs:
+        command: restore
+        arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity)'
 
-        - task: DotNetCoreCLI@2
-          displayName: dotnet build
-          inputs:
-            command: build
-            arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity) --no-restore'
+    - task: DotNetCoreCLI@2
+      displayName: dotnet build
+      inputs:
+        command: build
+        arguments: '--configuration $(BuildConfiguration) --verbosity $(Verbosity) --no-restore'
 
-        - task: DotNetCoreCLI@2
-          displayName: dotnet pack
-          inputs:
-            command: pack
-            verbosityPack: $(Verbosity)
-            packagesToPack: '*.sln'
-            configurationToPack: $(BuildConfiguration)
-            nobuild: true
-          
-        - task: DotNetCoreCLI@2
-          displayName: dotnet publish
-          inputs:
-            command: publish
-            arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity) -o $(Build.ArtifactStagingDirectory)'
-            publishWebProjects: false
-            zipAfterPublish: false
-            modifyOutputPath: true
-            projects: '**/*/*.csproj'
+    - task: DotNetCoreCLI@2
+      displayName: dotnet pack
+      inputs:
+        command: pack
+        verbosityPack: $(Verbosity)
+        packagesToPack: '*.sln'
+        configurationToPack: $(BuildConfiguration)
+        nobuild: true
+      
+    - task: DotNetCoreCLI@2
+      displayName: dotnet publish
+      inputs:
+        command: publish
+        arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity) -o $(Build.ArtifactStagingDirectory)'
+        publishWebProjects: false
+        zipAfterPublish: false
+        modifyOutputPath: true
+        projects: '**/*/*.csproj'
 
-        - task: DotNetCoreCLI@2
-          displayName: dotnet test
-          inputs:
-            command: test
-            arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity)'
-          env:
-            Version: $(GitVersion.SemVer)
-            AadAuth:Password: $(AadAuth:Password)
+    - task: DotNetCoreCLI@2
+      displayName: dotnet test
+      inputs:
+        command: test
+        arguments: '--configuration $(BuildConfiguration) --no-build --verbosity $(Verbosity)'
+      env:
+        Version: $(GitVersion.SemVer)
+        AadAuth:Password: $(AadAuth:Password)
 
-        - task: PublishPipelineArtifact@1
-          displayName: Publish pipeline artifacts
-          inputs:
-            targetPath: '$(Build.ArtifactStagingDirectory)'
-            artifactName: Build
-          condition: always()
+    - task: PublishPipelineArtifact@1
+      displayName: Publish pipeline artifacts
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifactName: Build
+      condition: always()
 
-  - stage: DeployAzureArtifacts
-    displayName: Deploy to Azure Artifacts
-    jobs:
-    - deployment:
-      environment: AzureArtifacts
-      strategy: 
-        runOnce:
-          deploy:          
-            steps:
-            - task: NuGetCommand@2
-              displayName: NuGet push
-              inputs:
-                command: 'push'
-                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
-                feedPublish: 'simeoncloud'
-                allowPackageConflicts: true
+- stage: DeployAzureArtifacts
+  displayName: Deploy to Azure Artifacts
+  jobs:
+  - deployment:
+    environment: AzureArtifacts
+    strategy: 
+      runOnce:
+        deploy:          
+          steps:
+          - task: NuGetCommand@2
+            displayName: NuGet push
+            inputs:
+              command: 'push'
+              packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
+              feedPublish: 'simeoncloud'
+              allowPackageConflicts: true
 
-  - stage: DeployNuGet
-    displayName: Deploy to nuget.org
-    jobs:
-    - deployment:
-      environment: NuGet
-      strategy: 
-        runOnce:
-          deploy:          
-            steps:
-            - task: NuGetCommand@2
-              displayName: NuGet push
-              inputs:
-                command: 'push'
-                packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
-                nuGetFeedType: 'external'
-                publishFeedCredentials: 'nuget.org'
-                allowPackageConflicts: true
+- stage: DeployNuGet
+  displayName: Deploy to nuget.org
+  jobs:
+  - deployment:
+    environment: NuGet
+    strategy: 
+      runOnce:
+        deploy:          
+          steps:
+          - task: NuGetCommand@2
+            displayName: NuGet push
+            inputs:
+              command: 'push'
+              packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
+              nuGetFeedType: 'external'
+              publishFeedCredentials: 'nuget.org'
+              allowPackageConflicts: true
