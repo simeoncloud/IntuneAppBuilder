@@ -65,23 +65,6 @@ stages:
         artifactName: Build
       condition: always()
 
-- stage: DeployAzureArtifacts
-  displayName: Deploy to Azure Artifacts
-  jobs:
-  - deployment:
-    environment: AzureArtifacts
-    strategy: 
-      runOnce:
-        deploy:          
-          steps:
-          - task: NuGetCommand@2
-            displayName: NuGet push
-            inputs:
-              command: 'push'
-              packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
-              feedPublish: 'simeoncloud'
-              allowPackageConflicts: true
-
 - stage: DeployNuGet
   displayName: Deploy to nuget.org
   jobs:
