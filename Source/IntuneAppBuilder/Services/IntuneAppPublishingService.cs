@@ -217,7 +217,7 @@ namespace IntuneAppBuilder.Services
             await new CloudBlockBlob(new Uri(contentFile.AzureStorageUri)).PutBlockListAsync(blockIds);
         }
 
-        private static async Task TryPutBlockAsync(MobileAppContentFile contentFile, string blockId, Stream stream)
+        private async Task TryPutBlockAsync(MobileAppContentFile contentFile, string blockId, Stream stream)
         {
             var attemptCount = 0;
             var position = stream.Position;
@@ -230,6 +230,7 @@ namespace IntuneAppBuilder.Services
                 catch (StorageException ex)
                 {
                     if (!new[] { 307, 403, 400 }.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 30) throw;
+                    logger.LogInformation($"Encountered retryable error ({ex.RequestInformation.HttpStatusCode}) uploading blob - will retry in 10 seconds.");
                     stream.Position = position;
                     await Task.Delay(10000);
                 }
