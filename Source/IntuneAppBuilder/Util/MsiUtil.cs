@@ -43,7 +43,7 @@ namespace IntuneAppBuilder.Util
                 }
                 catch (COMException ex)
                 {
-                    throw new InvalidDataException("The specified Windows Installer file could not be opened. Verify the file is a valid Windows Installer file.", ex);
+                    throw new InvalidDataException($"The specified Windows Installer file {path} could not be opened. Verify the file is a valid Windows Installer file.", ex);
                 }
             }
             catch
