@@ -229,8 +229,8 @@ namespace IntuneAppBuilder.Services
                 }
                 catch (StorageException ex)
                 {
-                    if (!new[] { 307, 403, 400 }.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 30) throw;
-                    logger.LogInformation($"Encountered retryable error ({ex.RequestInformation.HttpStatusCode}) uploading blob - will retry in 10 seconds.");
+                    if (!new[] { 307, 403, 400 }.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 50) throw;
+                    logger.LogInformation($"Encountered retryable error ({ex.RequestInformation.HttpStatusCode}) uploading blob to {contentFile.AzureStorageUri} - will retry in 10 seconds.");
                     stream.Position = position;
                     await Task.Delay(10000);
                 }
