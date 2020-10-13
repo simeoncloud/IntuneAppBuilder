@@ -74,11 +74,12 @@ stages:
       runOnce:
         deploy:
           steps:
-          - task: DotNetCoreCLI@2
-            displayName: 'dotnet push'
+          - task: NuGetCommand@2
+            displayName: NuGet push
             inputs:
-              command: custom
-              custom: nuget
-              arguments: push --skip-duplicate "$(Pipeline.Workspace)\Build\*.nupkg
+              command: 'push'
+              packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
               nuGetFeedType: 'external'
               publishFeedCredentials: 'nuget.org'
+              allowPackageConflicts: true
+              continueOnError: true
