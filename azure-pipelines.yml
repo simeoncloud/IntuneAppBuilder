@@ -38,7 +38,7 @@ stages:
         packagesToPack: '*.sln'
         configurationToPack: $(BuildConfiguration)
         nobuild: true
-      
+
     - task: DotNetCoreCLI@2
       displayName: dotnet publish
       inputs:
@@ -70,15 +70,9 @@ stages:
   jobs:
   - deployment:
     environment: NuGet
-    strategy: 
+    strategy:
       runOnce:
-        deploy:          
+        deploy:
           steps:
-          - task: NuGetCommand@2
-            displayName: NuGet push
-            inputs:
-              command: 'push'
-              packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg'
-              nuGetFeedType: 'external'
-              publishFeedCredentials: 'nuget.org'
-              allowPackageConflicts: true
+          - script: dotnet nuget push -s https://api.nuget.org/v3/index.json --skip-duplicate "$(Pipeline.Workspace)\Build\*.nupkg"
+            displayName: NuGet push to nuget.org
