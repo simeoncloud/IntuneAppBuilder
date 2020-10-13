@@ -78,6 +78,7 @@ stages:
             displayName: 'dotnet push'
             inputs:
               command: custom
-              custom: nuget push --skip-duplicate "$(Pipeline.Workspace)\Build\*.nupkg
+              custom: nuget
+              arguments: push --skip-duplicate "$(Pipeline.Workspace)\Build\*.nupkg
               nuGetFeedType: 'external'
               publishFeedCredentials: 'nuget.org'
