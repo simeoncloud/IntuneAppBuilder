@@ -74,5 +74,10 @@ stages:
       runOnce:
         deploy:
           steps:
+          - task: NuGetAuthenticate@0
+            inputs:
+              nuGetServiceConnections: nuget.org
+              forceReinstallCredentialProvider: true
+
           - script: dotnet nuget push -s https://api.nuget.org/v3/index.json --skip-duplicate "$(Pipeline.Workspace)\Build\*.nupkg"
             displayName: NuGet push to nuget.org
