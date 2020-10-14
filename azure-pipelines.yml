@@ -74,6 +74,14 @@ stages:
       runOnce:
         deploy:
           steps:
+          - pwsh: |
+              $versionInfo = gci *.nupkg |% { $file = $_; $_.Name | Select-String -Pattern '^(.*?)\.((?:\.?[0-9]+){3,}(?:[-a-z]+)?)\.nupkg$' |%{ $_.Matches[0] } |% { @{ Path = $file.FullName; Name = $_.Groups[1].Value; Version = $_.Groups[2].Value } } }
+              $versionInfo |? { Find-Package $_.Name -RequiredVersion $_.Version -Source nuget.org -EA SilentlyContinue } |% {
+                Write-Host "$($_.Path) already exists in nuget.org - skipping"
+                Remove-Item $_.Path
+              }
+            displayName: Exclude duplicate package versions
+
           - task: NuGetCommand@2
             displayName: NuGet push
             inputs:
