@@ -1,6 +1,6 @@
 # IntuneAppBuilder
 
-Package and deploy MSI and Win32 application packages (.intunewin) to Microsoft Intune with this cross-platform tool and SDK.
+Package MSI and Win32 application packages as .intunewin format to Microsoft Intune with this cross-platform tool.
 
 ## Overview
 
