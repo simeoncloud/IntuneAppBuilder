@@ -1,12 +1,14 @@
-# IntuneAppBuilder 
+# IntuneAppBuilder
+
+Package and deploy MSI and Win32 application packages (.intunewin) to Microsoft Intune with this cross-platform tool and SDK.
 
 ## Overview
 
-Use the Simeon IntuneAppBuilder tool to create and deploy Intune packages for MSI and Win32 applications. The tool converts installation files into the .intunewin format that can then be published using the tool or uploaded manually into the Intune Portal.  
+Use the Simeon IntuneAppBuilder tool to create and deploy Microsoft Intune packages for MSI and Win32 applications. The tool converts installation files into the .intunewin format that can then be published using the tool or uploaded manually into the Intune Portal.  
  
 IntuneAppBuilder is an open source component from the Simeon Microsoft 365 Management toolset. Learn more about Simeon’s full functionality at https://simeoncloud.com.
 
-[![Build Status](https://dev.azure.com/simeoncloud/Default/_apis/build/status/simeoncloud.IntuneAppBuilder?branchName=master&stageName=Deploy%20to%20Azure%20Artifacts)](https://dev.azure.com/simeoncloud/Default/_build/latest?definitionId=1&branchName=master)
+[![Build Status](https://dev.azure.com/simeoncloud/Dev/_apis/build/status/IntuneAppBuilder?branchName=master)](https://dev.azure.com/simeoncloud/Dev/_build/latest?definitionId=21&branchName=master)
 
 ## Getting Started
 
