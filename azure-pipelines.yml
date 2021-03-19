@@ -90,6 +90,7 @@ stages:
             displayName: Exclude duplicate package versions
 
           - task: NuGetCommand@2
+            condition: eq(variables['Build.SourceBranchName'], 'master')
             displayName: NuGet push
             inputs:
               command: 'push'
