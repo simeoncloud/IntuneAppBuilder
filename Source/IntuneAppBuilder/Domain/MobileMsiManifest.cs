@@ -16,17 +16,17 @@ namespace IntuneAppBuilder.Domain
         public string MsiExecutionContext { get; set; }
         [XmlAttribute]
         public bool MsiRequiresReboot { get; set; }
-        [XmlAttribute]
+        [XmlIgnore]
         public bool MsiRequiresLogon { get; set; }
-        [XmlAttribute]
+        [XmlIgnore]
         public string MsiPublisher { get; set; }
-        [XmlAttribute]
+        [XmlIgnore]
         public string MsiProductCode { get; set; }
-        [XmlAttribute]
+        [XmlIgnore]
         public string MsiPackageCode { get; set; }
         [XmlAttribute]
         public string MsiUpgradeCode { get; set; }
-        [XmlAttribute]
+        [XmlIgnore]
         public string MsiProductVersion { get; set; }
         [XmlAttribute]
         public bool MsiIsMachineInstall { get; set; }
@@ -34,7 +34,7 @@ namespace IntuneAppBuilder.Domain
         public bool MsiIsUserInstall { get; set; }
         [XmlAttribute]
         public bool MsiIncludesServices { get; set; }
-        [XmlAttribute]
+        [XmlIgnore]
 #pragma warning disable S100 // Methods and properties should be named in PascalCase
         public bool MsiIncludesODBCDataSource { get; set; }
 #pragma warning restore S100 // Methods and properties should be named in PascalCase
