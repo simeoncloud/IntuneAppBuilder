@@ -24,9 +24,9 @@ namespace IntuneAppBuilder.Domain
         [XmlAttribute]
         public bool MsiIncludesServices => false;
         [XmlAttribute]
-        public bool MsiContainsSystemRegistryKeys => false;
+        public bool MsiContainsSystemRegistryKeys { get; set; }
         [XmlAttribute]
-        public bool MsiContainsSystemFolders => false;
+        public bool MsiContainsSystemFolders { get; set; } 
 
         public byte[] ToByteArray()
         {
