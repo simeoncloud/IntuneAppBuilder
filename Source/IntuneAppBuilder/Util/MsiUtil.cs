@@ -100,19 +100,10 @@ namespace IntuneAppBuilder.Util
             return new MobileMsiManifest
             {
                 MsiExecutionContext = GetMsiExecutionContext(info.PackageType),
-                MsiPublisher = info.Publisher,
-                MsiProductCode = info.ProductCode,
-                MsiPackageCode = RetrievePropertyWithSummaryInfo("PackageCode", 9),
-                MsiProductVersion = info.ProductVersion,
                 MsiUpgradeCode = info.UpgradeCode,
-                MsiRequiresLogon = info.PackageType == Win32LobAppMsiPackageType.PerUser,
                 MsiRequiresReboot = info.RequiresReboot.GetValueOrDefault(),
                 MsiIsUserInstall = IsUserInstall(),
-                MsiIsMachineInstall = info.PackageType == Win32LobAppMsiPackageType.PerMachine || info.PackageType == Win32LobAppMsiPackageType.DualPurpose && !string.IsNullOrEmpty(ReadProperty("MSIINSTALLPERUSER", false)),
-                MsiIncludesServices = TableContainsRecords("ServiceInstall", "ServiceInstall"),
-                MsiContainsSystemFolders = ContainsSystemFolders(),
-                MsiContainsSystemRegistryKeys = ContainsSystemRegistryKeys(),
-                MsiIncludesODBCDataSource = TableContainsRecords("ODBCDataSource", "DataSource")
+                MsiIsMachineInstall = info.PackageType == Win32LobAppMsiPackageType.PerMachine || info.PackageType == Win32LobAppMsiPackageType.DualPurpose && !string.IsNullOrEmpty(ReadProperty("MSIINSTALLPERUSER", false))
             };
         }
 
@@ -163,77 +154,6 @@ namespace IntuneAppBuilder.Util
             catch (COMException)
             {
                 return null;
-            }
-        }
-        private bool ContainsSystemRegistryKeys()
-            => (ContainsSystemRegistryKeys("Registry") || ContainsSystemRegistryKeys("RemoveRegistry"));
-
-        private bool ContainsSystemRegistryKeys(string table)
-        {
-            try
-            {
-                var view = Query(table, "Root");
-                for (dynamic record = view.Fetch(); record != null; record = view.Fetch())
-                {
-                    if (record.get_StringData(1) is string s &&
-                        (new[] { "2", "3", }.Contains(s, StringComparer.OrdinalIgnoreCase)
-                         || (s == "-1" && IsUserInstall())))
-                        return true;
-                }
-            }
-            catch (Exception ex) when (ex is ArgumentException || ex is COMException)
-            {
-                return false;
-            }
-            return false;
-        }
-
-        private bool ContainsSystemFolders()
-        {
-            var view = Query("Directory", "Directory");
-            for (var record = view.Fetch(); record != null; record = view.Fetch())
-                if (new[]
-                {
-                    "AdminToolsFolder",
-                    "CommonAppDataFolder",
-                    "FontsFolder",
-                    "WindowsFolder",
-                    "WindowsVolume",
-                    "System16Folder",
-                    "System64Folder",
-                    "SystemFolder",
-                    "TempFolder"
-                }.Contains((string)record.get_StringData(1), StringComparer.OrdinalIgnoreCase))
-                    return true;
-            return false;
-        }
-
-        private bool TableContainsRecords(string table, string column)
-        {
-            try
-            {
-                if (Query(table, column).Fetch() == null)
-                    return true;
-            }
-            catch (Exception ex) when (ex is ArgumentException || ex is COMException)
-            {
-                return false;
-            }
-
-            return false;
-        }
-
-        private dynamic Query(string table, string columns)
-        {
-            try
-            {
-                var view = database.OpenView($"SELECT {columns} FROM `{table}`");
-                view.Execute();
-                return view;
-            }
-            catch (Exception ex) when (ex is ArgumentException || ex is COMException)
-            {
-                throw new ArgumentException($"Table not found: {table}.", nameof(table), ex);
             }
         }
     }

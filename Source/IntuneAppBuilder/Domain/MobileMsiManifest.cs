@@ -16,32 +16,18 @@ namespace IntuneAppBuilder.Domain
         public string MsiExecutionContext { get; set; }
         [XmlAttribute]
         public bool MsiRequiresReboot { get; set; }
-        [XmlIgnore]
-        public bool MsiRequiresLogon { get; set; }
-        [XmlIgnore]
-        public string MsiPublisher { get; set; }
-        [XmlIgnore]
-        public string MsiProductCode { get; set; }
-        [XmlIgnore]
-        public string MsiPackageCode { get; set; }
         [XmlAttribute]
         public string MsiUpgradeCode { get; set; }
-        [XmlIgnore]
-        public string MsiProductVersion { get; set; }
         [XmlAttribute]
         public bool MsiIsMachineInstall { get; set; }
         [XmlAttribute]
         public bool MsiIsUserInstall { get; set; }
         [XmlAttribute]
-        public bool MsiIncludesServices { get; set; }
-        [XmlIgnore]
-#pragma warning disable S100 // Methods and properties should be named in PascalCase
-        public bool MsiIncludesODBCDataSource { get; set; }
-#pragma warning restore S100 // Methods and properties should be named in PascalCase
+        public bool MsiIncludesServices => false;
         [XmlAttribute]
-        public bool MsiContainsSystemRegistryKeys { get; set; }
+        public bool MsiContainsSystemRegistryKeys => false;
         [XmlAttribute]
-        public bool MsiContainsSystemFolders { get; set; }
+        public bool MsiContainsSystemFolders => false;
 
         public byte[] ToByteArray()
         {
