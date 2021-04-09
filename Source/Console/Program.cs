@@ -26,11 +26,10 @@ namespace IntuneAppBuilder.Console
                 new Option<FileSystemInfo[]>(new[] {"--source", "-s"},
                         "Specifies a source to package. May be a directory with files for a Win32 app or a single msi file. May be specified multiple times.")
                     {Name = "sources", IsRequired = true},
-                new Option<string>(new[] {"--output", "-o"},
+                new Option<string>(new[] {"--output", "-o"}, () => ".",
                     "Specifies an output directory for packaging artifacts. Each packaged application will exist as a raw intunewin file, a portal-ready portal.intunewin file, and an intunewin.json file containing metadata. Defaults to the working directory.")
             };
-            ((Option)pack.Children["output"]).Argument.SetDefaultValue(".");
-            pack.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PackAsync), BindingFlags.Static | BindingFlags.NonPublic));
+            pack.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PackAsync), BindingFlags.Static | BindingFlags.NonPublic)!);
 
             var publish = new Command("publish")
             {
@@ -38,7 +37,7 @@ namespace IntuneAppBuilder.Console
                     "Specifies a source to publish. May be a directory with *.intunewin.json files or a single json file")
                     {Name = "sources", IsRequired = true}
             };
-            publish.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PublishAsync), BindingFlags.Static | BindingFlags.NonPublic));
+            publish.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PublishAsync), BindingFlags.Static | BindingFlags.NonPublic)!);
 
             var root = new RootCommand
             {
@@ -135,7 +134,7 @@ namespace IntuneAppBuilder.Console
             logger.LogInformation($"Loading package from file {file.FullName}.");
 
             var package = JsonConvert.DeserializeObject<IntuneAppPackage>(File.ReadAllText(file.FullName));
-            var dataPath = Path.Combine(file.DirectoryName, Path.GetFileNameWithoutExtension(file.FullName));
+            var dataPath = Path.Combine(file.DirectoryName!, Path.GetFileNameWithoutExtension(file.FullName));
             if (!File.Exists(dataPath)) throw new FileNotFoundException($"Could not find data file at {dataPath}.");
             logger.LogInformation($"Using package data file {dataPath}");
             package.Data = File.Open(dataPath, FileMode.Open, FileAccess.Read, FileShare.Read);
