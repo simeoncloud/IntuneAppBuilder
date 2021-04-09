@@ -3,7 +3,6 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 
-#pragma warning disable S125 // Sections of code should not be commented out
 namespace IntuneAppBuilder.Domain
 {
     /// <summary>
