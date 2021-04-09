@@ -22,7 +22,7 @@ namespace IntuneAppBuilder.Domain
         [XmlAttribute]
         public bool MsiIsUserInstall { get; set; }
         [XmlAttribute]
-        public bool MsiIncludesServices => false;
+        public bool MsiIncludesServices { get; set; }
         [XmlAttribute]
         public bool MsiContainsSystemRegistryKeys { get; set; }
         [XmlAttribute]
