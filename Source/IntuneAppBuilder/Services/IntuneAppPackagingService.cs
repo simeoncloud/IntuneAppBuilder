@@ -215,7 +215,7 @@ namespace IntuneAppBuilder.Services
             {
                 using (var aes = Aes.Create())
                 {
-                    return (aes ?? throw new InvalidOperationException()).IV;
+                    return aes.IV;
                 }
             }
 
@@ -234,7 +234,7 @@ namespace IntuneAppBuilder.Services
 
             async Task<byte[]> EncryptFileWithIVAsync()
             {
-                using (var aes = Aes.Create() ?? throw new InvalidOperationException())
+                using (var aes = Aes.Create())
                 using (var hmacSha256 = new HMACSHA256 { Key = hmacKey })
                 {
                     var hmacLength = hmacSha256.HashSize / 8;

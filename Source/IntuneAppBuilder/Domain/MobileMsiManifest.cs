@@ -26,18 +26,14 @@ namespace IntuneAppBuilder.Domain
         [XmlAttribute]
         public bool MsiContainsSystemRegistryKeys { get; set; }
         [XmlAttribute]
-        public bool MsiContainsSystemFolders { get; set; } 
+        public bool MsiContainsSystemFolders { get; set; }
 
         public byte[] ToByteArray()
         {
             var serializer = new XmlSerializer(typeof(MobileMsiManifest));
 
             using var ms = new MemoryStream();
-            using var writer = XmlWriter.Create(ms, new XmlWriterSettings
-            {
-                OmitXmlDeclaration = true,
-                Encoding = Encoding.ASCII // important - Graph can't serialize if UTF
-            });
+            using var writer = new XmlWriter(ms);
             serializer.Serialize(writer, this, new XmlSerializerNamespaces(new[]
             {
                 new XmlQualifiedName(string.Empty, string.Empty)
@@ -52,6 +48,24 @@ namespace IntuneAppBuilder.Domain
             if (data == null) return default;
             using var ms = new MemoryStream(data);
             return (MobileMsiManifest)serializer.Deserialize(ms);
+        }
+
+        private class XmlWriter : XmlTextWriter
+        {
+            public XmlWriter(Stream stream) : base(stream, Encoding.ASCII)
+            {
+            }
+
+            public override void WriteStartDocument()
+            {
+                // do not write xml declaration
+            }
+
+            public override void WriteEndElement()
+            {
+                // do not auto-close xml tags
+                base.WriteFullEndElement();
+            }
         }
     }
 }
