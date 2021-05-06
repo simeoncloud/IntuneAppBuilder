@@ -16,6 +16,9 @@ namespace IntuneAppBuilder.IntegrationTests.Util
     {
         private readonly Lazy<AuthenticationProviderOption> authenticationProviderOption = new Lazy<AuthenticationProviderOption>(() =>
         {
+            new[] {"Username", "Password"}.Select(Environment.GetEnvironmentVariable).Where(string.IsNullOrEmpty).ToList()
+                .ForEach(missingVar => throw new InvalidOperationException($"Environment variable AadAuth:{missingVar} is not specified."));
+
             var option = new AuthenticationProviderOption
             {
                 UserAccount = new GraphUserAccount { Email = Environment.GetEnvironmentVariable("AadAuth:Username") },
@@ -23,6 +26,7 @@ namespace IntuneAppBuilder.IntegrationTests.Util
             };
 
             Environment.GetEnvironmentVariable("AadAuth:Password")?.ToCharArray().ToList().ForEach(option.Password.AppendChar);
+
             return option;
         });
 
