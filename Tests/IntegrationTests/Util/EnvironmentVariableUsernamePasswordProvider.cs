@@ -16,8 +16,8 @@ namespace IntuneAppBuilder.IntegrationTests.Util
     {
         private readonly Lazy<AuthenticationProviderOption> authenticationProviderOption = new Lazy<AuthenticationProviderOption>(() =>
         {
-            new[] {"Username", "Password"}.Select(Environment.GetEnvironmentVariable).Where(string.IsNullOrEmpty).ToList()
-                .ForEach(missingVar => throw new InvalidOperationException($"Environment variable AadAuth:{missingVar} is not specified."));
+            new[] {"Username", "Password"}.Select(var => $"AadAuth:{var}").Select(Environment.GetEnvironmentVariable).Where(string.IsNullOrEmpty).ToList()
+                .ForEach(missingVar => throw new InvalidOperationException($"Environment variable {missingVar} is not specified."));
 
             var option = new AuthenticationProviderOption
             {
