@@ -47,7 +47,7 @@ namespace IntuneAppBuilder.Services
 
             logger.LogInformation($"Generating encrypted version of {sourcePath}.");
 
-            var data = new MemoryStream();
+            var data = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
             var encryptionInfo = await EncryptFileAsync(sourcePath, data);
             data.Position = 0;
 
