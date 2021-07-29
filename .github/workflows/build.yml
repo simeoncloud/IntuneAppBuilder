@@ -1,0 +1,99 @@
+name: IntuneAppBuilder Deployment
+
+# TODO: Remove these comments once reviewed
+# on:
+#   schedules:
+#   - cron: "30 7 * * *"
+#     displayName: Daily job
+#     branches:
+#       include:
+#       - master
+#     always: true
+#   push:
+#     branches:
+#       - master
+#   pull_request:
+#     types: [opened, synchronize, reopened, closed]
+#     branches:
+#       - master
+
+on: workflow_dispatch
+
+env:
+  BuildConfiguration: 'Release'
+  Verbosity: 'normal'
+  ArtifactFile: 'output.nupkg'
+
+defaults:
+  runs-on: windows-latest
+  run:
+    shell: pwsh
+
+jobs:
+  Build:
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.301
+
+      - name: dotnet restore
+        run: dotnet restore --configuration $(Env:BuildConfiguration) --verbosity $(Env:Verbosity)
+      
+      - name: dotnet build
+        run: dotnet build --configuration $(Env:BuildConfiguration) --verbosity $(Env:Verbosity)
+
+      - name: dotnet pack
+        run: dotnet pack --configuration $(Env:BuildConfiguration) --verbosity $(Env:Verbosity) --no-build *.sln
+
+      - name: dotnet publish
+        run: dotnet publish '**/*/*.csproj' --configuration $(Env:BuildConfiguration) --no-build --verbosity $(Env:Verbosity) -o $(Env:ArtifactFile)
+
+      - name: dotnet test
+        run: dotnet test --configuration $(Env:BuildConfiguration) --no-build --verbosity $(Env:Verbosity)
+        env:
+          AadAuth:Password: ${{ secrets.TESTAADAUTHPASSWORD }}
+          AadAuth:Username: ${{ secrets.TESTAADAUTHUSERNAME }}
+
+      - name: Publish pipeline artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.ArtifactFile }}
+          path: ${{ env.ArtifactFile }}
+
+  DeployNuGet:
+    needs: Build
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.301
+
+      - name: Download Artifact from Previous Job
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ env.ArtifactFile }}
+
+      - name: Exclude duplicate package versions
+        run: |
+          $versionInfo = gci . *.nupkg -Recurse |% { $file = $_; $_.Name | Select-String -Pattern '^(.*?)\.((?:\.?[0-9]+){3,}(?:[-a-z]+)?)\.nupkg$' |%{ $_.Matches[0] } |% { @{ Path = $file.FullName; Name = $_.Groups[1].Value; Version = $_.Groups[2].Value } } }
+          $versionInfo |% {
+            if (Find-Package $_.Name -RequiredVersion $_.Version -Source https://api.nuget.org/v3/index.json -EA SilentlyContinue) {
+              $message = "$($_.Path) already exists in nuget.org - skipping"
+              Write-Warning $message
+              Write-Host "##vso[task.logissue type=warning]$message"
+              Remove-Item $_.Path
+            }
+            else {
+              Write-Host "$($_.Path) does not exist in nuget.org - will push"
+            }
+          }
+
+      - name: NuGet Push
+        if: github.ref == 'refs/heads/master'
+        run: |
+          dotnet nuget push './**/*.nupkg' --api-key $Env:NUGET_KEY
+        env:
+          NUGET_KEY: ${{ secrets.NUGETAPIKEY }}
