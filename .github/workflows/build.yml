@@ -32,16 +32,16 @@ jobs:
           dotnet-version: 3.1.301
 
       - name: dotnet restore
-        run: dotnet restore --configuration $env:BuildConfiguration --verbosity $env:Verbosity
+        run: dotnet restore . --configuration $env:BuildConfiguration --verbosity $env:Verbosity
       
       - name: dotnet build
-        run: dotnet build --configuration $env:BuildConfiguration --verbosity $env:Verbosity
+        run: dotnet build . --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-restore
 
       - name: dotnet pack
-        run: dotnet pack --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
+        run: dotnet pack . --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
 
       - name: dotnet test
-        run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
+        run: dotnet test . --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
         env:
           AadAuth:Password: ${{ secrets.TEST_AADAUTH_PASSWORD }}
           AadAuth:Username: ${{ secrets.TEST_AADAUTH_USERNAME }}
