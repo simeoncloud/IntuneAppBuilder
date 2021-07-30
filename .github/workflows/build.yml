@@ -1,7 +1,7 @@
 name: IntuneAppBuilder Deployment
 
 on:
-  schedules:
+  schedule:
   - cron: "30 7 * * *"
     displayName: Daily job
     branches:
