@@ -3,11 +3,6 @@ name: IntuneAppBuilder Deployment
 on:
   schedule:
     - cron: "30 7 * * *"
-      displayName: Daily job
-      branches:
-        include:
-        - master
-      always: true
   push:
     branches:
       - master
