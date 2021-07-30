@@ -1,4 +1,4 @@
-name: IntuneAppBuilder Deployment
+name: Build and Deploy
 
 on:
   schedule:
