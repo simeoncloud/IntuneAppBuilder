@@ -1,0 +1,93 @@
+name: Build and Deploy
+
+on:
+  schedule:
+    - cron: "30 7 * * *"
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - master
+
+env:
+  BuildConfiguration: 'Release'
+  Verbosity: 'normal'
+  ArtifactName: 'Artifacts'
+  ArtifactDirectory: './artifacts/'
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  Build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.301
+
+      - name: dotnet restore
+        run: dotnet restore --verbosity $env:Verbosity
+      
+      - name: dotnet build
+        run: dotnet build --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-restore
+
+      - name: dotnet pack
+        run: dotnet pack --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
+
+      - name: dotnet test
+        run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
+        env:
+          AadAuth:Password: ${{ secrets.TEST_AADAUTH_PASSWORD }}
+          AadAuth:Username: ${{ secrets.TEST_AADAUTH_USERNAME }}
+
+      - name: Publish pipeline artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.ArtifactName }}
+          path: ${{ env.ArtifactDirectory }}
+
+  DeployNuGet:
+    needs: Build
+    runs-on: windows-latest
+    steps:
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.301
+
+      - name: Download Artifact from Previous Job
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ env.ArtifactName }}
+
+      - name: Exclude duplicate package versions
+        run: |
+          $versionInfo = gci . *.nupkg -Recurse |% { $file = $_; $_.Name | Select-String -Pattern '^(.*?)\.((?:\.?[0-9]+){3,}(?:[-a-z]+)?)\.nupkg$' |%{ $_.Matches[0] } |% { @{ Path = $file.FullName; Name = $_.Groups[1].Value; Version = $_.Groups[2].Value } } }
+          $versionInfo |% {
+            if (Find-Package $_.Name -RequiredVersion $_.Version -Source https://api.nuget.org/v3/index.json -EA SilentlyContinue) {
+              $message = "$($_.Path) already exists in nuget.org - skipping"
+              Write-Warning $message
+              Write-Host "##vso[task.logissue type=warning]$message"
+              Remove-Item $_.Path
+            }
+            else {
+              Write-Host "$($_.Path) does not exist in nuget.org - will push"
+            }
+          }
+
+      - name: NuGet Push
+        if: github.ref == 'refs/heads/master'
+        run: |
+          ls
+          pwd
+          dotnet nuget push *.nupkg --api-key $env:NUGET_KEY --source https://api.nuget.org/v3/index.json
+        env:
+          NUGET_KEY: ${{ secrets.NUGET_API_KEY }}
