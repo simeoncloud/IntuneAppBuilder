@@ -51,8 +51,8 @@ jobs:
       - name: dotnet test
         run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
         env:
-          AadAuth:Password: ${{ secrets.TESTAADAUTHPASSWORD }}
-          AadAuth:Username: ${{ secrets.TESTAADAUTHUSERNAME }}
+          AadAuth:Password: ${{ secrets.TEST_AADAUTH_PASSWORD }}
+          AadAuth:Username: ${{ secrets.TEST_AADAUTH_USERNAME }}
 
       - name: Publish pipeline artifacts
         uses: actions/upload-artifact@v2
@@ -94,4 +94,4 @@ jobs:
         run: |
           dotnet nuget push './**/*.nupkg' --api-key $env:NUGET_KEY
         env:
-          NUGET_KEY: ${{ secrets.NUGETAPIKEY }}
+          NUGET_KEY: ${{ secrets.NUGET_API_KEY }}
