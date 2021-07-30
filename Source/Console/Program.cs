@@ -52,7 +52,6 @@ namespace IntuneAppBuilder.Console
         internal static async Task PackAsync(FileSystemInfo[] sources, string output, IServiceCollection services = null)
         {
             services ??= GetServices();
-            damnsdfieruhgouahsofigja sdf= e=rtg= asd'f;
 
             output = Path.GetFullPath(output);
 
