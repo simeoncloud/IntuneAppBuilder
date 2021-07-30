@@ -22,7 +22,8 @@ on: workflow_dispatch
 env:
   BuildConfiguration: 'Release'
   Verbosity: 'normal'
-  ArtifactFile: 'output.nupkg'
+  ArtifactName: 'Artifacts'
+  ArtifactDirectory: './artifacts/'
 
 defaults:
   runs-on: windows-latest
@@ -39,19 +40,16 @@ jobs:
           dotnet-version: 3.1.301
 
       - name: dotnet restore
-        run: dotnet restore --configuration $(Env:BuildConfiguration) --verbosity $(Env:Verbosity)
+        run: dotnet restore --configuration $env:BuildConfiguration --verbosity $env:Verbosity
       
       - name: dotnet build
-        run: dotnet build --configuration $(Env:BuildConfiguration) --verbosity $(Env:Verbosity)
+        run: dotnet build --configuration $env:BuildConfiguration --verbosity $env:Verbosity
 
       - name: dotnet pack
-        run: dotnet pack --configuration $(Env:BuildConfiguration) --verbosity $(Env:Verbosity) --no-build *.sln
-
-      - name: dotnet publish
-        run: dotnet publish '**/*/*.csproj' --configuration $(Env:BuildConfiguration) --no-build --verbosity $(Env:Verbosity) -o $(Env:ArtifactFile)
+        run: dotnet pack --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
 
       - name: dotnet test
-        run: dotnet test --configuration $(Env:BuildConfiguration) --no-build --verbosity $(Env:Verbosity)
+        run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
         env:
           AadAuth:Password: ${{ secrets.TESTAADAUTHPASSWORD }}
           AadAuth:Username: ${{ secrets.TESTAADAUTHUSERNAME }}
@@ -59,8 +57,8 @@ jobs:
       - name: Publish pipeline artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.ArtifactFile }}
-          path: ${{ env.ArtifactFile }}
+          name: ${{ env.ArtifactName }}
+          path: ${{ env.ArtifactDirectory }}
 
   DeployNuGet:
     needs: Build
@@ -74,7 +72,7 @@ jobs:
       - name: Download Artifact from Previous Job
         uses: actions/download-artifact@v2
         with:
-          name: ${{ env.ArtifactFile }}
+          name: ${{ env.ArtifactName }}
 
       - name: Exclude duplicate package versions
         run: |
@@ -94,6 +92,6 @@ jobs:
       - name: NuGet Push
         if: github.ref == 'refs/heads/master'
         run: |
-          dotnet nuget push './**/*.nupkg' --api-key $Env:NUGET_KEY
+          dotnet nuget push './**/*.nupkg' --api-key $env:NUGET_KEY
         env:
           NUGET_KEY: ${{ secrets.NUGETAPIKEY }}
