@@ -84,7 +84,6 @@ jobs:
           }
 
       - name: NuGet Push
-        if: github.ref == 'refs/heads/master'
         run: |
           dotnet nuget push './**/*.nupkg' --api-key $env:NUGET_KEY
         env:
