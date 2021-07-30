@@ -18,12 +18,12 @@ env:
   ArtifactDirectory: './artifacts/'
 
 defaults:
-  runs-on: windows-latest
   run:
     shell: pwsh
 
 jobs:
   Build:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - name: Setup .NET Core
@@ -54,6 +54,7 @@ jobs:
 
   DeployNuGet:
     needs: Build
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - name: Setup .NET Core
