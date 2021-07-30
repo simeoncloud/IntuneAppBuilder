@@ -84,6 +84,7 @@ jobs:
           }
 
       - name: NuGet Push
+        if: github.ref == 'refs/heads/master'
         run: |
           ls
           pwd
