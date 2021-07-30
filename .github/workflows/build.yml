@@ -1,20 +1,23 @@
 name: IntuneAppBuilder Deployment
 
-on:
-  schedules:
-  - cron: "30 7 * * *"
-    displayName: Daily job
-    branches:
-      include:
-      - master
-    always: true
-  push:
-    branches:
-      - master
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - master
+# TODO: Remove these comments once reviewed
+# on:
+#   schedules:
+#   - cron: "30 7 * * *"
+#     displayName: Daily job
+#     branches:
+#       include:
+#       - master
+#     always: true
+#   push:
+#     branches:
+#       - master
+#   pull_request:
+#     types: [opened, synchronize, reopened, closed]
+#     branches:
+#       - master
+
+on: workflow_dispatch
 
 env:
   BuildConfiguration: 'Release'
