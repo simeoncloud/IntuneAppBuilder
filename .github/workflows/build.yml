@@ -86,7 +86,6 @@ jobs:
 
       - name: NuGet Push
         run: |
-          ls
           if (gci *.nupkg) {
             dotnet nuget push *.nupkg --api-key $env:NUGET_KEY --source https://api.nuget.org/v3/index.json
           }
