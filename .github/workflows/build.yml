@@ -55,6 +55,7 @@ jobs:
           path: ${{ env.ArtifactDirectory }}
 
   DeployNuGet:
+    if: github.event_name != 'schedule'
     needs: Build
     runs-on: windows-latest
     steps:
@@ -87,7 +88,11 @@ jobs:
         if: github.ref == 'refs/heads/master'
         run: |
           ls
-          pwd
-          dotnet nuget push *.nupkg --api-key $env:NUGET_KEY --source https://api.nuget.org/v3/index.json
+          if (gci *.nupkg) {
+            dotnet nuget push *.nupkg --api-key $env:NUGET_KEY --source https://api.nuget.org/v3/index.json
+          }
+          else {
+            Write-Host "No packages to publish. Skipping..."
+          }
         env:
           NUGET_KEY: ${{ secrets.NUGET_API_KEY }}
