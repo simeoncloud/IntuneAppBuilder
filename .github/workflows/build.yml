@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          
       - name: Set Up .NET Core
         uses: actions/setup-dotnet@v1
         with:
@@ -46,8 +47,8 @@ jobs:
       - name: dotnet test
         run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
         env:
-          AadAuth:Password: ${{ secrets.TEST_AADAUTH_PASSWORD }}
           AadAuth:Username: ${{ secrets.TEST_AADAUTH_USERNAME }}
+          AadAuth:Password: ${{ secrets.TEST_AADAUTH_PASSWORD }}
 
       - name: Publish pipeline artifacts
         uses: actions/upload-artifact@v2
