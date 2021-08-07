@@ -39,10 +39,10 @@ jobs:
         run: dotnet restore --verbosity $env:Verbosity
       
       - name: dotnet build
-        run: dotnet build --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-restore
+        run: $env:GITHUB_REF = '${{ github.head_ref }}'; dotnet build --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-restore
 
       - name: dotnet pack
-        run: dotnet pack --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
+        run: $env:GITHUB_REF = '${{ github.head_ref }}'; dotnet pack --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
 
       - name: dotnet test
         run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
