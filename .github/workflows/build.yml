@@ -50,15 +50,17 @@ jobs:
           AadAuth:Username: ${{ secrets.TEST_AADAUTH_USERNAME }}
           AadAuth:Password: ${{ secrets.TEST_AADAUTH_PASSWORD }}
 
-      - name: Publish pipeline artifacts
+      - name: Publish Pipeline Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: ${{ env.ArtifactName }}
           path: ${{ env.ArtifactDirectory }}
 
-  DeployNuGet:
+  Deploy:
     if: github.event_name != 'schedule'
     needs: Build
+    name: Deploy to nuget.org
+    environment: nuget.org
     runs-on: windows-latest
     steps:
       - name: Set Up .NET Core
@@ -71,7 +73,7 @@ jobs:
         with:
           name: ${{ env.ArtifactName }}
 
-      - name: Exclude duplicate package versions
+      - name: Exclude Duplicate Package Versions
         run: |
           $versionInfo = gci . *.nupkg -Recurse |% { $file = $_; $_.Name | Select-String -Pattern '^(.*?)\.((?:\.?[0-9]+){3,}(?:[-a-z]+)?)\.nupkg$' |%{ $_.Matches[0] } |% { @{ Path = $file.FullName; Name = $_.Groups[1].Value; Version = $_.Groups[2].Value } } }
           $versionInfo |% {
