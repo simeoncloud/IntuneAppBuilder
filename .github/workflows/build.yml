@@ -1,5 +1,4 @@
 name: Build and Deploy
-concurrency: build_and_deploy
 
 on:
   schedule:
@@ -43,6 +42,13 @@ jobs:
 
       - name: dotnet pack
         run: $env:GITHUB_REF = '${{ github.head_ref }}'; dotnet pack --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
+
+      - name: Turnstyle
+        uses: softprops/turnstyle@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          same-branch-only: false
 
       - name: dotnet test
         run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
