@@ -1,0 +1,106 @@
+name: Continuous Integration
+
+on:
+  schedule:
+    - cron: "30 7 * * *"
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - master
+
+env:
+  BuildConfiguration: 'Release'
+  Verbosity: 'normal'
+  ArtifactName: 'Artifacts'
+  ArtifactDirectory: './artifacts/'
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  Build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          
+      - name: Set Up .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.301
+
+      - name: dotnet restore
+        run: dotnet restore --verbosity $env:Verbosity
+      
+      - name: dotnet build
+        run: $env:GITHUB_REF = '${{ github.head_ref }}'; dotnet build --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-restore
+
+      - name: dotnet pack
+        run: $env:GITHUB_REF = '${{ github.head_ref }}'; dotnet pack --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
+
+      - name: Turnstyle
+        uses: softprops/turnstyle@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          same-branch-only: false
+
+      - name: dotnet test
+        run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
+        env:
+          AadAuth:Username: ${{ secrets.TEST_AADAUTH_USERNAME }}
+          AadAuth:Password: ${{ secrets.TEST_AADAUTH_PASSWORD }}
+
+      - name: Publish Pipeline Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.ArtifactName }}
+          path: ${{ env.ArtifactDirectory }}
+
+  Deploy:
+    if: github.event_name != 'schedule'
+    needs: Build
+    name: Deploy to nuget.org
+    environment: nuget.org
+    runs-on: windows-latest
+    steps:
+      - name: Set Up .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.301
+
+      - name: Download Artifact from Previous Job
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ env.ArtifactName }}
+
+      - name: Exclude Duplicate Package Versions
+        run: |
+          $versionInfo = gci . *.nupkg -Recurse |% { $file = $_; $_.Name | Select-String -Pattern '^(.*?)\.((?:\.?[0-9]+){3,}(?:[-a-z]+)?)\.nupkg$' |%{ $_.Matches[0] } |% { @{ Path = $file.FullName; Name = $_.Groups[1].Value; Version = $_.Groups[2].Value } } }
+          $versionInfo |% {
+            if (Find-Package $_.Name -RequiredVersion $_.Version -Source https://api.nuget.org/v3/index.json -EA SilentlyContinue) {
+              $message = "$($_.Path) already exists in nuget.org - skipping"
+              Write-Warning $message
+              Write-Host "##vso[task.logissue type=warning]$message"
+              Remove-Item $_.Path
+            }
+            else {
+              Write-Host "$($_.Path) does not exist in nuget.org - will push"
+            }
+          }
+
+      - name: NuGet Push
+        run: |
+          if (gci *.nupkg) {
+            dotnet nuget push *.nupkg --api-key $env:NUGET_KEY --source https://api.nuget.org/v3/index.json
+          }
+          else {
+            Write-Host "No packages to publish. Skipping..."
+          }
+        env:
+          NUGET_KEY: ${{ secrets.NUGET_API_KEY }}

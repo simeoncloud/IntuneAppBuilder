@@ -6,7 +6,7 @@
     <Import Project="$(MSBuildBinPath)/Microsoft.Common.CurrentVersion.targets" />
     <Import Project="$(BaseIntermediateOutputPath)/$(MSBuildThisFileName)$(MSBuildThisFileExtension).nuget.g.targets" Condition="Exists('$(BaseIntermediateOutputPath)/$(MSBuildThisFileName)$(MSBuildThisFileExtension).nuget.g.targets')" />
     <ItemGroup>
-        <PackageReference Include="GitVersionTask" Version="5.3.3" />
+        <PackageReference Include="GitVersionTask" Version="5.5.1" />
     </ItemGroup>
     <Target Name="Build" DependsOnTargets="GetVersion;WriteVersionInfoToBuildLog" Returns="$(GitVersion_NuGetVersion)" />
 </Project>
