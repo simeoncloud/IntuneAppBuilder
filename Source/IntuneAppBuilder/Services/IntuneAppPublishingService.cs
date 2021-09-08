@@ -43,11 +43,8 @@ namespace IntuneAppBuilder.Services
             // if content has never been committed, need to use last created content if one exists, otherwise an error is thrown
             if (app.CommittedContentVersion == null) content = (await requestBuilder.ContentVersions.Request().OrderBy("id desc").GetAsync()).FirstOrDefault();
 
-            if (content == null) content = await requestBuilder.ContentVersions.Request().AddAsync(new MobileAppContent());
-            else if ((await requestBuilder.ContentVersions[content.Id].Files.Request().Filter("isCommitted ne true").GetAsync()).Any())
-                // partially committed content - delete that content version
-                await requestBuilder.ContentVersions[content.Id].Request().DeleteAsync();
-
+            content ??= await requestBuilder.ContentVersions.Request().AddAsync(new MobileAppContent());
+            
             // manifests are only supported if the app is a WindowsMobileMSI (not a Win32 app installing an msi)
             if (!(app is WindowsMobileMSI)) package.File.Manifest = null;
 
