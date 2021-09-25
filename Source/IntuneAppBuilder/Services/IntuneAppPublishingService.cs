@@ -88,7 +88,7 @@ namespace IntuneAppBuilder.Services
             var blockCount = 0;
             var blockIds = new List<string>();
 
-            const int chunkSize = 10 * 1024 * 1024;
+            const int chunkSize = 25 * 1024 * 1024;
             package.Data.Seek(0, SeekOrigin.Begin);
             var lastBlockId = (Math.Ceiling((double)package.Data.Length / chunkSize) - 1).ToString("0000");
             var sw = Stopwatch.StartNew();
@@ -109,8 +109,6 @@ namespace IntuneAppBuilder.Services
                 {
                     await TryPutBlockAsync(contentFile, blockId, ms);
                 }
-
-                await Task.Delay(450000);
 
                 blockIds.Add(blockId);
             }
