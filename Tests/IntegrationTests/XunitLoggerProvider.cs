@@ -29,7 +29,6 @@ namespace IntuneAppBuilder.IntegrationTests
             var logFilePath = $"{GetTest(testOutputHelper).DisplayName}.log";
             var assemblyName = GetType().Assembly.GetName().Name!;
             if (logFilePath.StartsWith(assemblyName!)) logFilePath = logFilePath[assemblyName.Length..].TrimStart('.');
-            logFilePath = Path.Combine("logs", logFilePath);
             file = new Lazy<FileStream>(() => File.Open(logFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.Read));
             fileWriter = new Lazy<StreamWriter>(() => new StreamWriter(file.Value) { AutoFlush = true });
         }
