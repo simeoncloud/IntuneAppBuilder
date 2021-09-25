@@ -136,7 +136,7 @@ namespace IntuneAppBuilder.Services
 
 
         // waits for the desired status, refreshing the file along the way
-        private async Task<MobileAppContentFile> WaitForStateAsync(IMobileAppContentFileRequest contentFileRequest, MobileAppContentFileUploadState state)
+        private async Task<MobileAppContentFile> WaitForStateAsync(IMobileAppContentFileRequestBuilder contentFileRequestBuilder, MobileAppContentFileUploadState state)
         {
             logger.LogInformation($"Waiting for app content file to have a state of {state}.");
 
@@ -144,7 +144,7 @@ namespace IntuneAppBuilder.Services
 
             while (true)
             {
-                var contentFile = await contentFileRequest.GetAsync();
+                var contentFile = await contentFileRequestBuilder.Request().GetAsync();
 
                 if (contentFile.UploadState == state)
                 {
@@ -172,11 +172,9 @@ namespace IntuneAppBuilder.Services
         {
             // add content file
             var contentFile = await AddContentFileAsync(requestBuilder, package);
-
-            var contentFileRequest = requestBuilder.Files[contentFile.Id].Request();
-
+            
             // refetch until we can get the uri to upload to
-            contentFile = await WaitForStateAsync(contentFileRequest, MobileAppContentFileUploadState.AzureStorageUriRequestSuccess);
+            contentFile = await WaitForStateAsync(requestBuilder.Files[contentFile.Id], MobileAppContentFileUploadState.AzureStorageUriRequestSuccess);
 
             var sw = Stopwatch.StartNew();
 
@@ -188,7 +186,7 @@ namespace IntuneAppBuilder.Services
             await requestBuilder.Files[contentFile.Id].Commit(package.EncryptionInfo).Request().PostAsync();
 
             // refetch until has committed
-            await WaitForStateAsync(contentFileRequest, MobileAppContentFileUploadState.CommitFileSuccess);
+            await WaitForStateAsync(requestBuilder.Files[contentFile.Id], MobileAppContentFileUploadState.CommitFileSuccess);
         }
 
         private async Task CreateBlobAsync(IntuneAppPackage package, MobileAppContentFile contentFile, IMobileAppContentFileRequestBuilder contentFileRequestBuilder)
@@ -206,7 +204,7 @@ namespace IntuneAppBuilder.Services
                 {
                     logger.LogInformation("SAS URI requires renewal.");
                     await contentFileRequestBuilder.RenewUpload().Request().PostAsync();
-                    contentFile = await WaitForStateAsync(contentFileRequestBuilder.Request(), MobileAppContentFileUploadState.AzureStorageUriRenewalSuccess);
+                    contentFile = await WaitForStateAsync(contentFileRequestBuilder, MobileAppContentFileUploadState.AzureStorageUriRenewalSuccess);
                 }
 
                 var blockId = blockCount++.ToString("0000");
