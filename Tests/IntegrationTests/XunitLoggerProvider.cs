@@ -26,7 +26,7 @@ namespace IntuneAppBuilder.IntegrationTests
         {
             this.testOutputHelper = testOutputHelper;
 
-            var logFilePath = $"{GetTest(testOutputHelper).DisplayName}.log";
+            var logFilePath = Path.Combine(AppContext.BaseDirectory, $"{GetTest(testOutputHelper).DisplayName}.log");
             var assemblyName = GetType().Assembly.GetName().Name!;
             if (logFilePath.StartsWith(assemblyName!)) logFilePath = logFilePath[assemblyName.Length..].TrimStart('.');
             file = new Lazy<FileStream>(() => File.Open(logFilePath, FileMode.Create, FileAccess.ReadWrite, FileShare.Read));
