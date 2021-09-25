@@ -205,6 +205,7 @@ namespace IntuneAppBuilder.Services
                     logger.LogInformation("SAS URI requires renewal.");
                     await contentFileRequestBuilder.RenewUpload().Request().PostAsync();
                     contentFile = await WaitForStateAsync(contentFileRequestBuilder, MobileAppContentFileUploadState.AzureStorageUriRenewalSuccess);
+                    sw.Reset();
                 }
 
                 var blockId = blockCount++.ToString("0000");
