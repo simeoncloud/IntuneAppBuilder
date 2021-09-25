@@ -14,7 +14,6 @@ using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace IntuneAppBuilder.Services
 {
-    /// <inheritdoc />
     internal class IntuneAppPublishingService : IIntuneAppPublishingService
     {
         private readonly ILogger logger;
@@ -26,7 +25,6 @@ namespace IntuneAppBuilder.Services
             this.msGraphClient = msGraphClient;
         }
 
-        /// <inheritdoc />
         public async Task PublishAsync(IntuneAppPackage package)
         {
             logger.LogInformation($"Publishing Intune app package for {package.App.DisplayName}.");
@@ -50,129 +48,25 @@ namespace IntuneAppBuilder.Services
 
             await CreateAppContentFileAsync(requestBuilder.ContentVersions[content.Id], package);
 
-            MobileLobApp update = (MobileLobApp)Activator.CreateInstance(package.App.GetType());
+            var update = (MobileLobApp)Activator.CreateInstance(package.App.GetType());
             update.CommittedContentVersion = content.Id;
             await msGraphClient.DeviceAppManagement.MobileApps[app.Id].Request().UpdateAsync(update);
 
             logger.LogInformation($"Published Intune app package for {app.DisplayName} in {sw.ElapsedMilliseconds}ms.");
         }
 
-        /// <summary>
-        /// Gets an existing or creates a new app.
-        /// </summary>
-        /// <param name="app"></param>
-        /// <returns></returns>
-        private async Task<MobileLobApp> GetAppAsync(MobileLobApp app)
-        {
-            MobileLobApp result;
-            if (Guid.TryParse(app.Id, out var _))
-                // resolve from id
-                result = await msGraphClient.DeviceAppManagement.MobileApps[app.Id].Request().GetAsync() as MobileLobApp ?? throw new ArgumentException($"App {app.Id} should be a {nameof(MobileLobApp)}.", nameof(app));
-            else
-            {
-                // resolve from name
-                result = (await msGraphClient.DeviceAppManagement.MobileApps.Request().Filter($"displayName eq '{app.DisplayName}'").GetAsync()).OfType<MobileLobApp>().FirstOrDefault();
-            }
-
-            if (result == null)
-            {
-                SetDefaults(app);
-                // create new
-                logger.LogInformation($"App {app.DisplayName} does not exist - creating new app.");
-                result = (MobileLobApp)await msGraphClient.DeviceAppManagement.MobileApps.Request().AddAsync(app);
-            }
-
-            if (app.ODataType.TrimStart('#') != result.ODataType.TrimStart('#'))
-            {
-                throw new NotSupportedException($"Found existing application {result.DisplayName}, but it of type {result.ODataType.TrimStart('#')} and the app being deployed is of type {app.ODataType.TrimStart('#')} - delete the existing app and try again.");
-            }
-
-            logger.LogInformation($"Using app {result.Id} ({result.DisplayName}).");
-
-            return result;
-        }
-
-        /// <summary>
-        /// Gets a copy of the app with default values for null properties that are required.
-        /// </summary>
-        /// <param name="app"></param>
-        private static void SetDefaults(MobileLobApp app)
-        {
-            if (app is Win32LobApp win32)
-            {
-                // set required properties with default values if not already specified - can be changed later in the portal
-                win32.InstallExperience ??= new Win32LobAppInstallExperience { RunAsAccount = RunAsAccountType.System };
-                win32.InstallCommandLine ??= win32.MsiInformation == null ? win32.SetupFilePath : $"msiexec /i \"{win32.SetupFilePath}\"";
-                win32.UninstallCommandLine ??= win32.MsiInformation == null ? "echo Not Supported" : $"msiexec /x \"{win32.MsiInformation.ProductCode}\"";
-                win32.Publisher ??= "-";
-                win32.ApplicableArchitectures = WindowsArchitecture.X86 | WindowsArchitecture.X64;
-                win32.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V10_1607 = true };
-                if (win32.DetectionRules == null)
-                {
-                    if (win32.MsiInformation == null)
-                    {
-                        // no way to infer - use empty PS script
-                        win32.DetectionRules = new[]
-                        {
-                            new Win32LobAppPowerShellScriptDetection
-                            {
-                                ScriptContent = Convert.ToBase64String(new byte[0])
-                            }
-                        };
-                    }
-                    else
-                    {
-                        win32.DetectionRules = new[]
-                        {
-                            new Win32LobAppProductCodeDetection
-                            {
-                                ProductCode = win32.MsiInformation.ProductCode
-                            }
-                        };
-                    }
-                }
-            }
-        }
-
-
-        // waits for the desired status, refreshing the file along the way
-        private async Task<MobileAppContentFile> WaitForStateAsync(IMobileAppContentFileRequestBuilder contentFileRequestBuilder, MobileAppContentFileUploadState state)
-        {
-            logger.LogInformation($"Waiting for app content file to have a state of {state}.");
-
-            var waitStopwatch = Stopwatch.StartNew();
-
-            while (true)
-            {
-                var contentFile = await contentFileRequestBuilder.Request().GetAsync();
-
-                if (contentFile.UploadState == state)
-                {
-                    logger.LogInformation($"Waited {waitStopwatch.ElapsedMilliseconds}ms for app content file to have a state of {state}.");
-                    return contentFile;
-                }
-
-                var failedStates = new[]
-                {
-                    MobileAppContentFileUploadState.AzureStorageUriRequestFailed,
-                    MobileAppContentFileUploadState.AzureStorageUriRenewalFailed,
-                    MobileAppContentFileUploadState.CommitFileFailed
-                };
-
-                if (failedStates.Contains(contentFile.UploadState.GetValueOrDefault())) throw new InvalidOperationException($"{nameof(contentFile.UploadState)} is in a failed state of {contentFile.UploadState} - was waiting for {state}.");
-                const int waitTimeout = 240000;
-                const int testInterval = 2000;
-                if (waitStopwatch.ElapsedMilliseconds > waitTimeout) throw new InvalidOperationException($"Timed out waiting for {nameof(contentFile.UploadState)} of {state} - current state is {contentFile.UploadState}.");
-                await Task.Delay(testInterval);
-            }
-        }
-
+        private async Task<MobileAppContentFile> AddContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package) =>
+            await requestBuilder.Files.Request()
+                .WithMaxRetry(10)
+                .WithRetryDelay(30)
+                .WithShouldRetry((delay, count, r) => r.StatusCode == HttpStatusCode.NotFound)
+                .AddAsync(package.File);
 
         private async Task CreateAppContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
         {
             // add content file
             var contentFile = await AddContentFileAsync(requestBuilder, package);
-            
+
             // refetch until we can get the uri to upload to
             contentFile = await WaitForStateAsync(requestBuilder.Files[contentFile.Id], MobileAppContentFileUploadState.AzureStorageUriRequestSuccess);
 
@@ -215,11 +109,48 @@ namespace IntuneAppBuilder.Services
                 {
                     await TryPutBlockAsync(contentFile, blockId, ms);
                 }
-                
+
                 blockIds.Add(blockId);
             }
 
             await new CloudBlockBlob(new Uri(contentFile.AzureStorageUri)).PutBlockListAsync(blockIds);
+        }
+
+        /// <summary>
+        ///     Gets an existing or creates a new app.
+        /// </summary>
+        /// <param name="app"></param>
+        /// <returns></returns>
+        private async Task<MobileLobApp> GetAppAsync(MobileLobApp app)
+        {
+            MobileLobApp result;
+            if (Guid.TryParse(app.Id, out var _))
+                // resolve from id
+            {
+                result = await msGraphClient.DeviceAppManagement.MobileApps[app.Id].Request().GetAsync() as MobileLobApp ?? throw new ArgumentException($"App {app.Id} should be a {nameof(MobileLobApp)}.", nameof(app));
+            }
+            else
+            {
+                // resolve from name
+                result = (await msGraphClient.DeviceAppManagement.MobileApps.Request().Filter($"displayName eq '{app.DisplayName}'").GetAsync()).OfType<MobileLobApp>().FirstOrDefault();
+            }
+
+            if (result == null)
+            {
+                SetDefaults(app);
+                // create new
+                logger.LogInformation($"App {app.DisplayName} does not exist - creating new app.");
+                result = (MobileLobApp)await msGraphClient.DeviceAppManagement.MobileApps.Request().AddAsync(app);
+            }
+
+            if (app.ODataType.TrimStart('#') != result.ODataType.TrimStart('#'))
+            {
+                throw new NotSupportedException($"Found existing application {result.DisplayName}, but it of type {result.ODataType.TrimStart('#')} and the app being deployed is of type {app.ODataType.TrimStart('#')} - delete the existing app and try again.");
+            }
+
+            logger.LogInformation($"Using app {result.Id} ({result.DisplayName}).");
+
+            return result;
         }
 
         private async Task TryPutBlockAsync(MobileAppContentFile contentFile, string blockId, Stream stream)
@@ -241,13 +172,36 @@ namespace IntuneAppBuilder.Services
                 }
         }
 
-        private async Task<MobileAppContentFile> AddContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
+        // waits for the desired status, refreshing the file along the way
+        private async Task<MobileAppContentFile> WaitForStateAsync(IMobileAppContentFileRequestBuilder contentFileRequestBuilder, MobileAppContentFileUploadState state)
         {
-            return await requestBuilder.Files.Request()
-                .WithMaxRetry(10)
-                .WithRetryDelay(30)
-                .WithShouldRetry((delay, count, r) => r.StatusCode == HttpStatusCode.NotFound)
-                .AddAsync(package.File);
+            logger.LogInformation($"Waiting for app content file to have a state of {state}.");
+
+            var waitStopwatch = Stopwatch.StartNew();
+
+            while (true)
+            {
+                var contentFile = await contentFileRequestBuilder.Request().GetAsync();
+
+                if (contentFile.UploadState == state)
+                {
+                    logger.LogInformation($"Waited {waitStopwatch.ElapsedMilliseconds}ms for app content file to have a state of {state}.");
+                    return contentFile;
+                }
+
+                var failedStates = new[]
+                {
+                    MobileAppContentFileUploadState.AzureStorageUriRequestFailed,
+                    MobileAppContentFileUploadState.AzureStorageUriRenewalFailed,
+                    MobileAppContentFileUploadState.CommitFileFailed
+                };
+
+                if (failedStates.Contains(contentFile.UploadState.GetValueOrDefault())) throw new InvalidOperationException($"{nameof(contentFile.UploadState)} is in a failed state of {contentFile.UploadState} - was waiting for {state}.");
+                const int waitTimeout = 240000;
+                const int testInterval = 2000;
+                if (waitStopwatch.ElapsedMilliseconds > waitTimeout) throw new InvalidOperationException($"Timed out waiting for {nameof(contentFile.UploadState)} of {state} - current state is {contentFile.UploadState}.");
+                await Task.Delay(testInterval);
+            }
         }
 
         /// <summary>
@@ -270,6 +224,48 @@ namespace IntuneAppBuilder.Services
             finally
             {
                 if (disposeSourceStream) source.Dispose();
+            }
+        }
+
+        /// <summary>
+        ///     Gets a copy of the app with default values for null properties that are required.
+        /// </summary>
+        /// <param name="app"></param>
+        private static void SetDefaults(MobileLobApp app)
+        {
+            if (app is Win32LobApp win32)
+            {
+                // set required properties with default values if not already specified - can be changed later in the portal
+                win32.InstallExperience ??= new Win32LobAppInstallExperience { RunAsAccount = RunAsAccountType.System };
+                win32.InstallCommandLine ??= win32.MsiInformation == null ? win32.SetupFilePath : $"msiexec /i \"{win32.SetupFilePath}\"";
+                win32.UninstallCommandLine ??= win32.MsiInformation == null ? "echo Not Supported" : $"msiexec /x \"{win32.MsiInformation.ProductCode}\"";
+                win32.Publisher ??= "-";
+                win32.ApplicableArchitectures = WindowsArchitecture.X86 | WindowsArchitecture.X64;
+                win32.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V10_1607 = true };
+                if (win32.DetectionRules == null)
+                {
+                    if (win32.MsiInformation == null)
+                    {
+                        // no way to infer - use empty PS script
+                        win32.DetectionRules = new[]
+                        {
+                            new Win32LobAppPowerShellScriptDetection
+                            {
+                                ScriptContent = Convert.ToBase64String(new byte[0])
+                            }
+                        };
+                    }
+                    else
+                    {
+                        win32.DetectionRules = new[]
+                        {
+                            new Win32LobAppProductCodeDetection
+                            {
+                                ProductCode = win32.MsiInformation.ProductCode
+                            }
+                        };
+                    }
+                }
             }
         }
     }

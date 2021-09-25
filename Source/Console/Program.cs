@@ -23,19 +23,19 @@ namespace IntuneAppBuilder.Console
 
             var pack = new Command("pack")
             {
-                new Option<FileSystemInfo[]>(new[] {"--source", "-s"},
+                new Option<FileSystemInfo[]>(new[] { "--source", "-s" },
                         "Specifies a source to package. May be a directory with files for a Win32 app or a single msi file. May be specified multiple times.")
-                    {Name = "sources", IsRequired = true},
-                new Option<string>(new[] {"--output", "-o"}, () => ".",
+                    { Name = "sources", IsRequired = true },
+                new Option<string>(new[] { "--output", "-o" }, () => ".",
                     "Specifies an output directory for packaging artifacts. Each packaged application will exist as a raw intunewin file, a portal-ready portal.intunewin file, and an intunewin.json file containing metadata. Defaults to the working directory.")
             };
             pack.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PackAsync), BindingFlags.Static | BindingFlags.NonPublic)!);
 
             var publish = new Command("publish")
             {
-                new Option<string[]>(new[] {"--source", "-s"},
-                    "Specifies a source to publish. May be a directory with *.intunewin.json files or a single json file")
-                    {Name = "sources", IsRequired = true}
+                new Option<string[]>(new[] { "--source", "-s" },
+                        "Specifies a source to publish. May be a directory with *.intunewin.json files or a single json file")
+                    { Name = "sources", IsRequired = true }
             };
             publish.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PublishAsync), BindingFlags.Static | BindingFlags.NonPublic)!);
 
@@ -47,48 +47,6 @@ namespace IntuneAppBuilder.Console
             root.TreatUnmatchedTokensAsErrors = true;
 
             return await root.InvokeAsync(args);
-        }
-
-        internal static async Task PackAsync(FileSystemInfo[] sources, string output, IServiceCollection services = null)
-        {
-            services ??= GetServices();
-
-            output = Path.GetFullPath(output);
-
-            AddBuilders(sources, services);
-
-            var sp = services.BuildServiceProvider();
-            foreach (var builder in sp.GetRequiredService<IEnumerable<IIntuneAppPackageBuilder>>()) await BuildAsync(builder, sp.GetRequiredService<IIntuneAppPackagingService>(), output, GetLogger(sp));
-        }
-
-        /// <summary>
-        ///     Invokes the builder in a dedicated working directory.
-        /// </summary>
-        private static async Task BuildAsync(IIntuneAppPackageBuilder builder, IIntuneAppPackagingService packagingService, string output, ILogger logger)
-        {
-            var cd = Environment.CurrentDirectory;
-            Environment.CurrentDirectory = output;
-            try
-            {
-                var package = await builder.BuildAsync(null);
-                package.Data.Position = 0;
-
-                var baseFileName = Path.GetFileNameWithoutExtension(package.App.FileName);
-
-                File.WriteAllText($"{baseFileName}.intunewin.json", JsonConvert.SerializeObject(package, Formatting.Indented));
-
-                await using (var fs = File.Open($"{baseFileName}.intunewin", FileMode.Create, FileAccess.Write, FileShare.Read))
-                    await package.Data.CopyToAsync(fs);
-
-                await using (var fs = File.Open($"{baseFileName}.portal.intunewin", FileMode.Create, FileAccess.Write, FileShare.Read))
-                    await packagingService.BuildPackageForPortalAsync(package, fs);
-
-                logger.LogInformation($"Finished writing {baseFileName} package files to {output}.");
-            }
-            finally
-            {
-                Environment.CurrentDirectory = cd;
-            }
         }
 
         /// <summary>
@@ -113,6 +71,31 @@ namespace IntuneAppBuilder.Console
             }
         }
 
+        internal static IServiceCollection GetServices()
+        {
+            var services = new ServiceCollection();
+            services.AddIntuneAppBuilder();
+            services.AddLogging(builder =>
+            {
+                // don't write info for HttpClient
+                builder.AddFilter((category, level) => category.StartsWith("System.Net.Http.HttpClient") ? level >= LogLevel.Warning : level >= LogLevel.Information);
+                builder.AddConsole();
+            });
+            return services;
+        }
+
+        internal static async Task PackAsync(FileSystemInfo[] sources, string output, IServiceCollection services = null)
+        {
+            services ??= GetServices();
+
+            output = Path.GetFullPath(output);
+
+            AddBuilders(sources, services);
+
+            var sp = services.BuildServiceProvider();
+            foreach (var builder in sp.GetRequiredService<IEnumerable<IIntuneAppPackageBuilder>>()) await BuildAsync(builder, sp.GetRequiredService<IIntuneAppPackagingService>(), output, GetLogger(sp));
+        }
+
         internal static async Task PublishAsync(FileSystemInfo[] sources, IServiceCollection services = null)
         {
             services ??= GetServices();
@@ -129,6 +112,42 @@ namespace IntuneAppBuilder.Console
             }
         }
 
+        /// <summary>
+        ///     Invokes the builder in a dedicated working directory.
+        /// </summary>
+        private static async Task BuildAsync(IIntuneAppPackageBuilder builder, IIntuneAppPackagingService packagingService, string output, ILogger logger)
+        {
+            var cd = Environment.CurrentDirectory;
+            Environment.CurrentDirectory = output;
+            try
+            {
+                var package = await builder.BuildAsync(null);
+                package.Data.Position = 0;
+
+                var baseFileName = Path.GetFileNameWithoutExtension(package.App.FileName);
+
+                File.WriteAllText($"{baseFileName}.intunewin.json", JsonConvert.SerializeObject(package, Formatting.Indented));
+
+                await using (var fs = File.Open($"{baseFileName}.intunewin", FileMode.Create, FileAccess.Write, FileShare.Read))
+                {
+                    await package.Data.CopyToAsync(fs);
+                }
+
+                await using (var fs = File.Open($"{baseFileName}.portal.intunewin", FileMode.Create, FileAccess.Write, FileShare.Read))
+                {
+                    await packagingService.BuildPackageForPortalAsync(package, fs);
+                }
+
+                logger.LogInformation($"Finished writing {baseFileName} package files to {output}.");
+            }
+            finally
+            {
+                Environment.CurrentDirectory = cd;
+            }
+        }
+
+        private static ILogger GetLogger(IServiceProvider sp) => sp.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(Program));
+
         private static IntuneAppPackage ReadPackage(FileInfo file, ILogger logger)
         {
             logger.LogInformation($"Loading package from file {file.FullName}.");
@@ -140,21 +159,5 @@ namespace IntuneAppBuilder.Console
             package.Data = File.Open(dataPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             return package;
         }
-
-        internal static IServiceCollection GetServices()
-        {
-            var services = new ServiceCollection();
-            services.AddIntuneAppBuilder();
-            services.AddLogging(builder =>
-            {
-                // don't write info for HttpClient
-                builder.AddFilter((category, level) => category.StartsWith("System.Net.Http.HttpClient") ? level >= LogLevel.Warning : level >= LogLevel.Information);
-                builder.AddConsole();
-            });
-            return services;
-        }
-
-        private static ILogger GetLogger(IServiceProvider sp) => sp.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(Program));
-
     }
 }

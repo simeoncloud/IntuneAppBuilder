@@ -18,47 +18,12 @@ namespace IntuneAppBuilder.IntegrationTests
 {
     public class ProgramTests
     {
-        public ProgramTests(ITestOutputHelper testOutputHelper) => this.testOutputHelper = testOutputHelper;
-
         private readonly ITestOutputHelper testOutputHelper;
 
-        private IServiceCollection GetServices() =>
-            Program.GetServices()
-                .AddLogging(b => b.AddProvider(new XunitLoggerProvider(testOutputHelper)))
-                .AddSingleton<IGraphServiceClient>(sp => new GraphServiceClient(new EnvironmentVariableUsernamePasswordProvider()));
-
-        private static async Task ExecuteInDirectory(string path, Func<Task> action)
-        {
-            new DirectoryInfo(path).CreateEmptyDirectory();
-
-            var cd = Environment.CurrentDirectory;
-            try
-            {
-                Environment.CurrentDirectory = path;
-                await action();
-            }
-            finally
-            {
-                Environment.CurrentDirectory = cd;
-                Directory.Delete(path, true);
-            }
-        }
-
-        private async Task DeleteAppAsync(string name)
-        {
-            var graph = GetServices().BuildServiceProvider().GetRequiredService<IGraphServiceClient>();
-            var apps = (await graph.DeviceAppManagement.MobileApps.Request().Filter($"displayName eq '{name}'").GetAsync()).OfType<MobileLobApp>();
-            foreach (var app in apps)
-            {
-                await graph.DeviceAppManagement.MobileApps[app.Id].Request()
-                    .WithMaxRetry(3).WithShouldRetry((d, a, r) => true)
-                    .DeleteAsync();
-            }
-        }
+        public ProgramTests(ITestOutputHelper testOutputHelper) => this.testOutputHelper = testOutputHelper;
 
         [Fact]
-        public async Task Msi()
-        {
+        public async Task Msi() =>
             await ExecuteInDirectory(nameof(Msi), async () =>
             {
                 await DeleteAppAsync("Remote Desktop");
@@ -80,11 +45,9 @@ namespace IntuneAppBuilder.IntegrationTests
 
                 await DeleteAppAsync("Remote Desktop");
             });
-        }
 
         [Fact]
-        public async Task Win32()
-        {
+        public async Task Win32() =>
             await ExecuteInDirectory(nameof(Win32), async () =>
             {
                 await DeleteAppAsync("Remote Desktop");
@@ -107,6 +70,39 @@ namespace IntuneAppBuilder.IntegrationTests
 
                 await DeleteAppAsync("Remote Desktop");
             });
+
+        private async Task DeleteAppAsync(string name)
+        {
+            var graph = GetServices().BuildServiceProvider().GetRequiredService<IGraphServiceClient>();
+            var apps = (await graph.DeviceAppManagement.MobileApps.Request().Filter($"displayName eq '{name}'").GetAsync()).OfType<MobileLobApp>();
+            foreach (var app in apps)
+            {
+                await graph.DeviceAppManagement.MobileApps[app.Id].Request()
+                    .WithMaxRetry(3).WithShouldRetry((d, a, r) => true)
+                    .DeleteAsync();
+            }
+        }
+
+        private IServiceCollection GetServices() =>
+            Program.GetServices()
+                .AddLogging(b => b.AddProvider(XunitLoggerProvider.GetOrCreate(testOutputHelper)))
+                .AddSingleton<IGraphServiceClient>(sp => new GraphServiceClient(new EnvironmentVariableUsernamePasswordProvider()));
+
+        private static async Task ExecuteInDirectory(string path, Func<Task> action)
+        {
+            new DirectoryInfo(path).CreateEmptyDirectory();
+
+            var cd = Environment.CurrentDirectory;
+            try
+            {
+                Environment.CurrentDirectory = path;
+                await action();
+            }
+            finally
+            {
+                Environment.CurrentDirectory = cd;
+                Directory.Delete(path, true);
+            }
         }
     }
 }
