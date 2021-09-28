@@ -197,7 +197,7 @@ namespace IntuneAppBuilder.Services
                 };
 
                 if (failedStates.Contains(contentFile.UploadState.GetValueOrDefault())) throw new InvalidOperationException($"{nameof(contentFile.UploadState)} is in a failed state of {contentFile.UploadState} - was waiting for {state}.");
-                const int waitTimeout = 240000;
+                const int waitTimeout = 600000;
                 const int testInterval = 2000;
                 if (waitStopwatch.ElapsedMilliseconds > waitTimeout) throw new InvalidOperationException($"Timed out waiting for {nameof(contentFile.UploadState)} of {state} - current state is {contentFile.UploadState}.");
                 await Task.Delay(testInterval);
