@@ -23,6 +23,31 @@ namespace IntuneAppBuilder.IntegrationTests
         public ProgramTests(ITestOutputHelper testOutputHelper) => this.testOutputHelper = testOutputHelper;
 
         [Fact]
+        public async Task LargeWin32() =>
+            await ExecuteInDirectory(nameof(Win32), async () =>
+            {
+                await DeleteAppAsync("big");
+
+                Directory.CreateDirectory("big");
+                using (var fs = new FileStream("big/big.exe", FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    fs.SetLength(1024L * 1024L * 1024L * 8L);
+                }
+
+                await Program.PackAsync(new FileSystemInfo[] { new DirectoryInfo("big") }, ".", GetServices());
+
+                Assert.True(File.Exists("big.intunewin"));
+                Assert.True(File.Exists("big.portal.intunewin"));
+                Assert.True(File.Exists("big.intunewin.json"));
+
+                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("big.intunewin.json") }, GetServices());
+                // publish second time to test udpating
+                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("big.intunewin.json") }, GetServices());
+
+                await DeleteAppAsync("big");
+            });
+
+        [Fact]
         public async Task Msi() =>
             await ExecuteInDirectory(nameof(Msi), async () =>
             {
