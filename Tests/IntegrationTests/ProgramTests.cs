@@ -30,7 +30,7 @@ namespace IntuneAppBuilder.IntegrationTests
 
                 Directory.CreateDirectory("big");
 
-                testOutputHelper.WriteLine($"Available space: {string.Join(", ", DriveInfo.GetDrives().Select(i => $"{i.Name} - {i.AvailableFreeSpace / 1024 / 1024}MB"))}.");
+                testOutputHelper.WriteLine($"Available space: {string.Join(", ", DriveInfo.GetDrives().Where(i => i.IsReady).Select(i => $"{i.Name} - {i.AvailableFreeSpace / 1024 / 1024}MB"))}.");
 
                 const int sizeInMb = 1024 * 7;
                 var data = new byte[8192];
