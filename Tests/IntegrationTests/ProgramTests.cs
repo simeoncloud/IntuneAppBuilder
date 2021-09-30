@@ -29,9 +29,17 @@ namespace IntuneAppBuilder.IntegrationTests
                 await DeleteAppAsync("big");
 
                 Directory.CreateDirectory("big");
+
+                const int sizeInMb = 1024 * 8;
+                var data = new byte[8192];
+                var rng = new Random();
                 using (var fs = new FileStream("big/big.exe", FileMode.Create, FileAccess.Write, FileShare.None))
                 {
-                    fs.SetLength(1024L * 1024L * 1024L * 8L);
+                    for (var i = 0; i < sizeInMb * 128; i++)
+                    {
+                        rng.NextBytes(data);
+                        fs.Write(data, 0, data.Length);
+                    }
                 }
 
                 await Program.PackAsync(new FileSystemInfo[] { new DirectoryInfo("big") }, ".", GetServices());
