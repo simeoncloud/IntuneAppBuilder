@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -29,6 +30,8 @@ namespace IntuneAppBuilder.IntegrationTests
                 await DeleteAppAsync("big");
 
                 Directory.CreateDirectory("big");
+
+                Debug.WriteLine($"Available space: {DriveInfo.GetDrives().Select(i => $"{i.Name} - {i.AvailableFreeSpace / 1024 / 1024}MB")}");
 
                 const int sizeInMb = 1024 * 7;
                 var data = new byte[8192];
