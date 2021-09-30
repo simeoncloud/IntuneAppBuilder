@@ -30,7 +30,7 @@ namespace IntuneAppBuilder.IntegrationTests
 
                 Directory.CreateDirectory("big");
 
-                const int sizeInMb = 1024 * 8;
+                const int sizeInMb = 1024 * 7;
                 var data = new byte[8192];
                 var rng = new Random();
                 using (var fs = new FileStream("big/big.exe", FileMode.Create, FileAccess.Write, FileShare.None))
