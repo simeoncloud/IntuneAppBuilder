@@ -32,7 +32,7 @@ namespace IntuneAppBuilder.IntegrationTests
 
                 testOutputHelper.WriteLine($"Available space: {string.Join(", ", DriveInfo.GetDrives().Where(i => i.IsReady).Select(i => $"{i.Name} - {i.AvailableFreeSpace / 1024 / 1024}MB"))}.");
 
-                const int sizeInMb = 1024 * 7;
+                const int sizeInMb = 1024 * 8;
                 var data = new byte[8192];
                 var rng = new Random();
                 using (var fs = new FileStream("big/big.exe", FileMode.Create, FileAccess.Write, FileShare.None))

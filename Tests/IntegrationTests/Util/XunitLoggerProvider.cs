@@ -10,10 +10,8 @@ using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-namespace IntuneAppBuilder.IntegrationTests
+namespace IntuneAppBuilder.IntegrationTests.Util
 {
-#pragma warning disable S3881 // "IDisposable" should be implemented correctly
-#pragma warning disable CA1063 // Implement IDisposable Correctly
     internal sealed class XunitLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
         private static readonly ConcurrentDictionary<ITestOutputHelper, Lazy<XunitLoggerProvider>> Providers = new ConcurrentDictionary<ITestOutputHelper, Lazy<XunitLoggerProvider>>();
