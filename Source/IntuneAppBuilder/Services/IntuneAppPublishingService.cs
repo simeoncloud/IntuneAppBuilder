@@ -96,18 +96,24 @@ namespace IntuneAppBuilder.Services
             {
                 if (sw.ElapsedMilliseconds >= 450000)
                 {
-                    logger.LogInformation("SAS URI requires renewal.");
-                    await contentFileRequestBuilder.RenewUpload().Request().PostAsync();
-                    contentFile = await WaitForStateAsync(contentFileRequestBuilder, MobileAppContentFileUploadState.AzureStorageUriRenewalSuccess);
+                    contentFile = await RenewStorageUri(contentFileRequestBuilder);
                     sw.Restart();
                 }
 
                 var blockId = blockCount++.ToString("0000");
                 logger.LogInformation($"Uploading block {blockId} of {lastBlockId} to {contentFile.AzureStorageUri}.");
 
-                await using (var ms = new MemoryStream(chunk))
+                try
                 {
-                    await TryPutBlockAsync(contentFile, blockId, ms);
+                    await using (var ms = new MemoryStream(chunk))
+                    {
+                        await TryPutBlockAsync(contentFile, blockId, ms);
+                    }
+                }
+                catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 403)
+                {
+                    contentFile = await RenewStorageUri(contentFileRequestBuilder);
+                    sw.Restart();
                 }
 
                 blockIds.Add(blockId);
@@ -153,6 +159,13 @@ namespace IntuneAppBuilder.Services
             return result;
         }
 
+        private async Task<MobileAppContentFile> RenewStorageUri(IMobileAppContentFileRequestBuilder contentFileRequestBuilder)
+        {
+            logger.LogInformation($"Renewing SAS URI for {contentFileRequestBuilder.RequestUrl}.");
+            await contentFileRequestBuilder.RenewUpload().Request().PostAsync();
+            return await WaitForStateAsync(contentFileRequestBuilder, MobileAppContentFileUploadState.AzureStorageUriRenewalSuccess);
+        }
+
         private async Task TryPutBlockAsync(MobileAppContentFile contentFile, string blockId, Stream stream)
         {
             var attemptCount = 0;
@@ -165,7 +178,7 @@ namespace IntuneAppBuilder.Services
                 }
                 catch (StorageException ex)
                 {
-                    if (!new[] { 307, 403, 400 }.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 50) throw;
+                    if (!new[] { 307, 403, 400 }.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 30) throw;
                     logger.LogInformation($"Encountered retryable error ({ex.RequestInformation.HttpStatusCode}) uploading blob to {contentFile.AzureStorageUri} - will retry in 10 seconds.");
                     stream.Position = position;
                     await Task.Delay(10000);
