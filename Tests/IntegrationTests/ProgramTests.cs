@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -32,7 +33,8 @@ namespace IntuneAppBuilder.IntegrationTests
 
                 testOutputHelper.WriteLine($"Available space: {string.Join(", ", DriveInfo.GetDrives().Where(i => i.IsReady).Select(i => $"{i.Name} - {i.AvailableFreeSpace / 1024 / 1024}MB"))}.");
 
-                const int sizeInMb = 1024 * 8;
+                var sw = Stopwatch.StartNew();
+                const int sizeInMb = 1024 * 7;
                 var data = new byte[8192];
                 var rng = new Random();
                 using (var fs = new FileStream("big/big.exe", FileMode.Create, FileAccess.Write, FileShare.None))
@@ -43,6 +45,8 @@ namespace IntuneAppBuilder.IntegrationTests
                         fs.Write(data, 0, data.Length);
                     }
                 }
+
+                testOutputHelper.WriteLine($"Generated {sizeInMb}MB file in {sw.ElapsedMilliseconds / 1000} seconds.");
 
                 await Program.PackAsync(new FileSystemInfo[] { new DirectoryInfo("big") }, ".", GetServices());
 
