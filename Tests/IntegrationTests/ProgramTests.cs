@@ -51,7 +51,7 @@ namespace IntuneAppBuilder.IntegrationTests
                 Assert.True(File.Exists("big.intunewin.json"));
 
                 await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("big.intunewin.json") }, GetServices());
-                // publish second time to test udpating
+                // publish second time to test updating
                 await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("big.intunewin.json") }, GetServices());
 
                 await DeleteAppAsync("big");
