@@ -6,7 +6,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using IntuneAppBuilder.IntegrationTests.Util;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Xunit;
 using Xunit.Abstractions;
@@ -124,7 +123,6 @@ namespace IntuneAppBuilder.IntegrationTests
 
         private IServiceCollection GetServices() =>
             Program.GetServices()
-                .AddLogging(b => b.AddProvider(XunitLoggerProvider.GetOrCreate(testOutputHelper)))
                 .AddSingleton<IGraphServiceClient>(sp => new GraphServiceClient(new EnvironmentVariableUsernamePasswordProvider()));
 
         private static async Task ExecuteInDirectory(string path, Func<Task> action)
