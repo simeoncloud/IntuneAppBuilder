@@ -11,10 +11,9 @@ namespace IntuneAppBuilder.Builders
     /// </summary>
     public class PathIntuneAppPackageBuilder : IIntuneAppPackageBuilder
     {
-        public string Name { get; }
+        private readonly IIntuneAppPackagingService packagingService;
 
         private readonly string path;
-        private readonly IIntuneAppPackagingService packagingService;
 
         public PathIntuneAppPackageBuilder(string path, IIntuneAppPackagingService packagingService)
         {
@@ -22,6 +21,8 @@ namespace IntuneAppBuilder.Builders
             this.path = path;
             this.packagingService = packagingService;
         }
+
+        public string Name { get; }
 
         public Task<IntuneAppPackage> BuildAsync(MobileLobApp app) => packagingService.BuildPackageAsync(path);
     }

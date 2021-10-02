@@ -17,14 +17,12 @@ using File = System.IO.File;
 
 namespace IntuneAppBuilder.Services
 {
-    /// <inheritdoc />
     internal class IntuneAppPackagingService : IIntuneAppPackagingService
     {
         private readonly ILogger logger;
 
         public IntuneAppPackagingService(ILogger<IntuneAppPackagingService> logger) => this.logger = logger;
 
-        /// <inheritdoc />
         public async Task<IntuneAppPackage> BuildPackageAsync(string sourcePath = ".", string setupFilePath = null)
         {
             var sw = Stopwatch.StartNew();
@@ -66,7 +64,7 @@ namespace IntuneAppBuilder.Services
                     FileName = $"{name}.intunewin",
                     SetupFilePath = Path.GetFileName(setupFilePath),
                     MsiInformation = msiInfo.Info,
-                    InstallExperience = new Win32LobAppInstallExperience { RunAsAccount = GetRunAsAccountType(msiInfo) },
+                    InstallExperience = new Win32LobAppInstallExperience { RunAsAccount = GetRunAsAccountType(msiInfo) }
                 };
 
             app.DisplayName = msiInfo.Info?.ProductName ?? name;
@@ -108,7 +106,9 @@ namespace IntuneAppBuilder.Services
             var packageEntry = archive.CreateEntry("IntuneWinPackage/Contents/IntunePackage.intunewin", CompressionLevel.NoCompression);
             package.Data.Position = 0;
             using (var dataEntryStream = packageEntry.Open())
+            {
                 await package.Data.CopyToAsync(dataEntryStream);
+            }
 
             var detectionEntry = archive.CreateEntry("IntuneWinPackage/Metadata/Detection.xml", CompressionLevel.NoCompression);
             using (var detectionEntryStream = detectionEntry.Open())
@@ -118,92 +118,6 @@ namespace IntuneAppBuilder.Services
             }
 
             logger.LogInformation($"Created Intune portal package for {package.App.FileName} in {sw.ElapsedMilliseconds}ms.");
-        }
-
-        private (string ZipFilePath, string SetupFilePath) ZipContent(string sourcePath, string setupFilePath)
-        {
-            string zipFilePath = null;
-            if (Directory.Exists(sourcePath))
-            {
-                sourcePath = Path.GetFullPath(sourcePath);
-                zipFilePath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(Path.GetFullPath(sourcePath))}.intunewin.zip");
-                if (File.Exists(zipFilePath)) File.Delete(zipFilePath);
-                logger.LogInformation($"Creating intermediate zip of {sourcePath} at {zipFilePath}.");
-                ZipFile.CreateFromDirectory(sourcePath, zipFilePath, CompressionLevel.Optimal, false);
-                if (setupFilePath == null) setupFilePath = Directory.GetFiles(sourcePath, "*.msi").FirstOrDefault() ?? Directory.GetFiles(sourcePath, "*.exe").FirstOrDefault();
-            }
-
-            return (zipFilePath, setupFilePath);
-        }
-
-        private (Win32LobAppMsiInformation Info, MobileMsiManifest Manifest) GetMsiInfo(string setupFilePath)
-        {
-            if (".msi".Equals(Path.GetExtension(setupFilePath), StringComparison.OrdinalIgnoreCase))
-                using (var util = new MsiUtil(setupFilePath, logger))
-                {
-                    return util.ReadMsiInfo();
-                }
-
-            return default;
-        }
-
-        /// <summary>
-        ///     This file is included in the zip file the portal expects.
-        ///     It is essentially a collection of metadata, used specifically by the portal javascript to patch data on the mobile
-        ///     app and its content (e.g. the Manifest of the content file).
-        /// </summary>
-        private string GetDetectionXml(IntuneAppPackage package)
-        {
-            var xml = new XmlDocument();
-
-            XmlElement AppendElement(XmlNode parent, string name, object value = null)
-            {
-                var e = xml.CreateElement(name);
-                if (value != null) e.InnerText = value.ToString();
-                parent.AppendChild(e);
-                return e;
-            }
-
-            var infoElement = AppendElement(xml, "ApplicationInfo");
-            xml.DocumentElement?.SetAttribute("ToolVersion", "1.4.0.0");
-            AppendElement(infoElement, "Name", package.App.DisplayName);
-            AppendElement(infoElement, "UnencryptedContentSize", package.File.Size);
-            AppendElement(infoElement, "FileName", "IntunePackage.intunewin");
-            AppendElement(infoElement, "SetupFile", package.App is Win32LobApp win32 ? win32.SetupFilePath : package.App.FileName);
-
-            var namespaces = new XmlSerializerNamespaces(new[] {
-                new XmlQualifiedName(string.Empty, string.Empty)
-            });
-
-            using (var writer = infoElement.CreateNavigator().AppendChild())
-            {
-                writer.WriteWhitespace("");
-
-                var overrides = new XmlAttributeOverrides();
-                overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.AdditionalData), new XmlAttributes { XmlIgnore = true });
-                overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.ODataType), new XmlAttributes { XmlIgnore = true });
-
-                new XmlSerializer(typeof(FileEncryptionInfo), overrides, new Type[0],
-                        new XmlRootAttribute("EncryptionInfo"), null)
-                    .Serialize(writer, package.EncryptionInfo, namespaces);
-            }
-
-            if (package.File.Manifest != null)
-                using (var writer = infoElement.CreateNavigator().AppendChild())
-                {
-                    writer.WriteWhitespace("");
-
-                    var overrides = new XmlAttributeOverrides();
-                    typeof(MobileMsiManifest).GetProperties().ToList().ForEach(p =>
-                    {
-                        if (p.DeclaringType != null)
-                            overrides.Add(p.DeclaringType, p.Name, new XmlAttributes());
-                    });
-                    new XmlSerializer(typeof(MobileMsiManifest), overrides, new Type[0], new XmlRootAttribute("MsiInfo"), string.Empty)
-                        .Serialize(writer, MobileMsiManifest.FromByteArray(package.File.Manifest), namespaces);
-                }
-
-            return FormatXml(xml);
         }
 
         /// <summary>
@@ -289,10 +203,97 @@ namespace IntuneAppBuilder.Services
             }
         }
 
+        /// <summary>
+        ///     This file is included in the zip file the portal expects.
+        ///     It is essentially a collection of metadata, used specifically by the portal javascript to patch data on the mobile
+        ///     app and its content (e.g. the Manifest of the content file).
+        /// </summary>
+        private string GetDetectionXml(IntuneAppPackage package)
+        {
+            var xml = new XmlDocument();
+
+            XmlElement AppendElement(XmlNode parent, string name, object value = null)
+            {
+                var e = xml.CreateElement(name);
+                if (value != null) e.InnerText = value.ToString();
+                parent.AppendChild(e);
+                return e;
+            }
+
+            var infoElement = AppendElement(xml, "ApplicationInfo");
+            xml.DocumentElement?.SetAttribute("ToolVersion", "1.4.0.0");
+            AppendElement(infoElement, "Name", package.App.DisplayName);
+            AppendElement(infoElement, "UnencryptedContentSize", package.File.Size);
+            AppendElement(infoElement, "FileName", "IntunePackage.intunewin");
+            AppendElement(infoElement, "SetupFile", package.App is Win32LobApp win32 ? win32.SetupFilePath : package.App.FileName);
+
+            var namespaces = new XmlSerializerNamespaces(new[]
+            {
+                new XmlQualifiedName(string.Empty, string.Empty)
+            });
+
+            using (var writer = infoElement.CreateNavigator().AppendChild())
+            {
+                writer.WriteWhitespace("");
+
+                var overrides = new XmlAttributeOverrides();
+                overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.AdditionalData), new XmlAttributes { XmlIgnore = true });
+                overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.ODataType), new XmlAttributes { XmlIgnore = true });
+
+                new XmlSerializer(typeof(FileEncryptionInfo), overrides, new Type[0],
+                        new XmlRootAttribute("EncryptionInfo"), null)
+                    .Serialize(writer, package.EncryptionInfo, namespaces);
+            }
+
+            if (package.File.Manifest != null)
+                using (var writer = infoElement.CreateNavigator().AppendChild())
+                {
+                    writer.WriteWhitespace("");
+
+                    var overrides = new XmlAttributeOverrides();
+                    typeof(MobileMsiManifest).GetProperties().ToList().ForEach(p =>
+                    {
+                        if (p.DeclaringType != null)
+                            overrides.Add(p.DeclaringType, p.Name, new XmlAttributes());
+                    });
+                    new XmlSerializer(typeof(MobileMsiManifest), overrides, new Type[0], new XmlRootAttribute("MsiInfo"), string.Empty)
+                        .Serialize(writer, MobileMsiManifest.FromByteArray(package.File.Manifest), namespaces);
+                }
+
+            return FormatXml(xml);
+        }
+
+        private (Win32LobAppMsiInformation Info, MobileMsiManifest Manifest) GetMsiInfo(string setupFilePath)
+        {
+            if (".msi".Equals(Path.GetExtension(setupFilePath), StringComparison.OrdinalIgnoreCase))
+                using (var util = new MsiUtil(setupFilePath, logger))
+                {
+                    return util.ReadMsiInfo();
+                }
+
+            return default;
+        }
+
+        private (string ZipFilePath, string SetupFilePath) ZipContent(string sourcePath, string setupFilePath)
+        {
+            string zipFilePath = null;
+            if (Directory.Exists(sourcePath))
+            {
+                sourcePath = Path.GetFullPath(sourcePath);
+                zipFilePath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(Path.GetFullPath(sourcePath))}.intunewin.zip");
+                if (File.Exists(zipFilePath)) File.Delete(zipFilePath);
+                logger.LogInformation($"Creating intermediate zip of {sourcePath} at {zipFilePath}.");
+                ZipFile.CreateFromDirectory(sourcePath, zipFilePath, CompressionLevel.Optimal, false);
+                if (setupFilePath == null) setupFilePath = Directory.GetFiles(sourcePath, "*.msi").FirstOrDefault() ?? Directory.GetFiles(sourcePath, "*.exe").FirstOrDefault();
+            }
+
+            return (zipFilePath, setupFilePath);
+        }
+
         private static string FormatXml(XmlDocument doc)
         {
-            StringBuilder sb = new StringBuilder();
-            XmlWriterSettings settings = new XmlWriterSettings
+            var sb = new StringBuilder();
+            var settings = new XmlWriterSettings
             {
                 Indent = true,
                 IndentChars = "  ",
@@ -300,10 +301,11 @@ namespace IntuneAppBuilder.Services
                 NewLineHandling = NewLineHandling.Replace,
                 OmitXmlDeclaration = true
             };
-            using (XmlWriter writer = XmlWriter.Create(sb, settings))
+            using (var writer = XmlWriter.Create(sb, settings))
             {
                 doc.Save(writer);
             }
+
             return sb.ToString();
         }
 

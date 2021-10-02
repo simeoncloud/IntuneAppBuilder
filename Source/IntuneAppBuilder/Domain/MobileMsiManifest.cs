@@ -6,27 +6,34 @@ using System.Xml.Serialization;
 namespace IntuneAppBuilder.Domain
 {
     /// <summary>
-    /// A statically typed manifest for an MSI app. Gets converted to a byte array and included on MobileAppContentFile.
+    ///     A statically typed manifest for an MSI app. Gets converted to a byte array and included on MobileAppContentFile.
     /// </summary>
     [XmlRoot("MobileMsiData")]
     public class MobileMsiManifest
     {
         [XmlAttribute]
-        public string MsiExecutionContext { get; set; }
-        [XmlAttribute]
-        public bool MsiRequiresReboot { get; set; }
-        [XmlAttribute]
-        public string MsiUpgradeCode { get; set; }
-        [XmlAttribute]
-        public bool MsiIsMachineInstall { get; set; }
-        [XmlAttribute]
-        public bool MsiIsUserInstall { get; set; }
-        [XmlAttribute]
-        public bool MsiIncludesServices { get; set; }
+        public bool MsiContainsSystemFolders { get; set; }
+
         [XmlAttribute]
         public bool MsiContainsSystemRegistryKeys { get; set; }
+
         [XmlAttribute]
-        public bool MsiContainsSystemFolders { get; set; }
+        public string MsiExecutionContext { get; set; }
+
+        [XmlAttribute]
+        public bool MsiIncludesServices { get; set; }
+
+        [XmlAttribute]
+        public bool MsiIsMachineInstall { get; set; }
+
+        [XmlAttribute]
+        public bool MsiIsUserInstall { get; set; }
+
+        [XmlAttribute]
+        public bool MsiRequiresReboot { get; set; }
+
+        [XmlAttribute]
+        public string MsiUpgradeCode { get; set; }
 
         public byte[] ToByteArray()
         {
@@ -56,15 +63,13 @@ namespace IntuneAppBuilder.Domain
             {
             }
 
+            public override void WriteEndElement() =>
+                // do not auto-close xml tags
+                base.WriteFullEndElement();
+
             public override void WriteStartDocument()
             {
                 // do not write xml declaration
-            }
-
-            public override void WriteEndElement()
-            {
-                // do not auto-close xml tags
-                base.WriteFullEndElement();
             }
         }
     }

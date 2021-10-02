@@ -1,11 +1,11 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using IntuneAppBuilder.IntegrationTests.Util;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Xunit;
 using Xunit.Abstractions;
@@ -18,47 +18,50 @@ namespace IntuneAppBuilder.IntegrationTests
 {
     public class ProgramTests
     {
-        public ProgramTests(ITestOutputHelper testOutputHelper) => this.testOutputHelper = testOutputHelper;
-
         private readonly ITestOutputHelper testOutputHelper;
 
-        private IServiceCollection GetServices() =>
-            Program.GetServices()
-                .AddLogging(b => b.AddProvider(new XunitLoggerProvider(testOutputHelper)))
-                .AddSingleton<IGraphServiceClient>(sp => new GraphServiceClient(new EnvironmentVariableUsernamePasswordProvider()));
-
-        private static async Task ExecuteInDirectory(string path, Func<Task> action)
-        {
-            new DirectoryInfo(path).CreateEmptyDirectory();
-
-            var cd = Environment.CurrentDirectory;
-            try
-            {
-                Environment.CurrentDirectory = path;
-                await action();
-            }
-            finally
-            {
-                Environment.CurrentDirectory = cd;
-                Directory.Delete(path, true);
-            }
-        }
-
-        private async Task DeleteAppAsync(string name)
-        {
-            var graph = GetServices().BuildServiceProvider().GetRequiredService<IGraphServiceClient>();
-            var apps = (await graph.DeviceAppManagement.MobileApps.Request().Filter($"displayName eq '{name}'").GetAsync()).OfType<MobileLobApp>();
-            foreach (var app in apps)
-            {
-                await graph.DeviceAppManagement.MobileApps[app.Id].Request()
-                    .WithMaxRetry(3).WithShouldRetry((d, a, r) => true)
-                    .DeleteAsync();
-            }
-        }
+        public ProgramTests(ITestOutputHelper testOutputHelper) => this.testOutputHelper = testOutputHelper;
 
         [Fact]
-        public async Task Msi()
-        {
+        public async Task LargeWin32() =>
+            await ExecuteInDirectory($"C:\\temp\\{nameof(Win32)}", async () =>
+            {
+                await DeleteAppAsync("big");
+
+                Directory.CreateDirectory("big");
+
+                testOutputHelper.WriteLine($"Available space: {string.Join(", ", DriveInfo.GetDrives().Where(i => i.IsReady).Select(i => $"{i.Name} - {i.AvailableFreeSpace / 1024 / 1024}MB"))}.");
+
+                var sw = Stopwatch.StartNew();
+                const int sizeInMb = 1024 * 7;
+                var data = new byte[8192];
+                var rng = new Random();
+                using (var fs = new FileStream("big/big.exe", FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    for (var i = 0; i < sizeInMb * 128; i++)
+                    {
+                        rng.NextBytes(data);
+                        fs.Write(data, 0, data.Length);
+                    }
+                }
+
+                testOutputHelper.WriteLine($"Generated {sizeInMb}MB file in {sw.ElapsedMilliseconds / 1000} seconds.");
+
+                await Program.PackAsync(new FileSystemInfo[] { new DirectoryInfo("big") }, ".", GetServices());
+
+                Assert.True(File.Exists("big.intunewin"));
+                Assert.True(File.Exists("big.portal.intunewin"));
+                Assert.True(File.Exists("big.intunewin.json"));
+
+                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("big.intunewin.json") }, GetServices());
+                // publish second time to test updating
+                await Program.PublishAsync(new FileSystemInfo[] { new FileInfo("big.intunewin.json") }, GetServices());
+
+                await DeleteAppAsync("big");
+            });
+
+        [Fact]
+        public async Task Msi() =>
             await ExecuteInDirectory(nameof(Msi), async () =>
             {
                 await DeleteAppAsync("Remote Desktop");
@@ -80,11 +83,9 @@ namespace IntuneAppBuilder.IntegrationTests
 
                 await DeleteAppAsync("Remote Desktop");
             });
-        }
 
         [Fact]
-        public async Task Win32()
-        {
+        public async Task Win32() =>
             await ExecuteInDirectory(nameof(Win32), async () =>
             {
                 await DeleteAppAsync("Remote Desktop");
@@ -107,6 +108,38 @@ namespace IntuneAppBuilder.IntegrationTests
 
                 await DeleteAppAsync("Remote Desktop");
             });
+
+        private async Task DeleteAppAsync(string name)
+        {
+            var graph = GetServices().BuildServiceProvider().GetRequiredService<IGraphServiceClient>();
+            var apps = (await graph.DeviceAppManagement.MobileApps.Request().Filter($"displayName eq '{name}'").GetAsync()).OfType<MobileLobApp>();
+            foreach (var app in apps)
+            {
+                await graph.DeviceAppManagement.MobileApps[app.Id].Request()
+                    .WithMaxRetry(3).WithShouldRetry((d, a, r) => true)
+                    .DeleteAsync();
+            }
+        }
+
+        private IServiceCollection GetServices() =>
+            Program.GetServices()
+                .AddSingleton<IGraphServiceClient>(sp => new GraphServiceClient(new EnvironmentVariableUsernamePasswordProvider()));
+
+        private static async Task ExecuteInDirectory(string path, Func<Task> action)
+        {
+            new DirectoryInfo(path).CreateEmptyDirectory();
+
+            var cd = Environment.CurrentDirectory;
+            try
+            {
+                Environment.CurrentDirectory = path;
+                await action();
+            }
+            finally
+            {
+                Environment.CurrentDirectory = cd;
+                Directory.Delete(path, true);
+            }
         }
     }
 }

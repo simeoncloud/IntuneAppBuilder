@@ -17,7 +17,7 @@ namespace IntuneAppBuilder.Util
 
         public ComObject(object instance) => this.instance = instance;
 
-        public static ComObject CreateObject(string progId) => new ComObject(Activator.CreateInstance(Type.GetTypeFromProgID(progId, true)));
+        public void Dispose() => Marshal.FinalReleaseComObject(instance);
 
         [DebuggerNonUserCode]
         public override bool TryGetMember(GetMemberBinder binder, out object result)
@@ -35,31 +35,6 @@ namespace IntuneAppBuilder.Util
             catch (TargetInvocationException ex) when (ex.InnerException != null)
             {
                 result = null;
-                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
-            }
-
-            return true;
-        }
-
-        [DebuggerNonUserCode]
-        public override bool TrySetMember(SetMemberBinder binder, object value)
-        {
-            try
-            {
-                instance.GetType()
-                    .InvokeMember(
-                        binder.Name,
-                        BindingFlags.SetProperty,
-                        Type.DefaultBinder,
-                        instance,
-                        new[]
-                        {
-                            Unwrap(value)
-                        }
-                    );
-            }
-            catch (TargetInvocationException ex) when (ex.InnerException != null)
-            {
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
             }
 
@@ -95,6 +70,31 @@ namespace IntuneAppBuilder.Util
             return true;
         }
 
+        [DebuggerNonUserCode]
+        public override bool TrySetMember(SetMemberBinder binder, object value)
+        {
+            try
+            {
+                instance.GetType()
+                    .InvokeMember(
+                        binder.Name,
+                        BindingFlags.SetProperty,
+                        Type.DefaultBinder,
+                        instance,
+                        new[]
+                        {
+                            Unwrap(value)
+                        }
+                    );
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            }
+
+            return true;
+        }
+
         private object Unwrap(object value) =>
             value is ComObject comObject
                 ? comObject.instance
@@ -102,6 +102,6 @@ namespace IntuneAppBuilder.Util
 
         private object Wrap(object value) => value is MarshalByRefObject ? new ComObject(value) : value;
 
-        public void Dispose() => Marshal.FinalReleaseComObject(instance);
+        public static ComObject CreateObject(string progId) => new ComObject(Activator.CreateInstance(Type.GetTypeFromProgID(progId, true)));
     }
 }

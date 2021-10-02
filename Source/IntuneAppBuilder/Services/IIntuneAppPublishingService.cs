@@ -9,7 +9,7 @@ namespace IntuneAppBuilder.Services
     public interface IIntuneAppPublishingService
     {
         /// <summary>
-        ///  Uploads a file for a mobileApp and sets it as the current contentVersion.
+        ///     Uploads a file for a mobileApp and sets it as the current contentVersion.
         /// </summary>
         /// <param name="package">A package created using the packaging service.</param>
         /// <returns></returns>

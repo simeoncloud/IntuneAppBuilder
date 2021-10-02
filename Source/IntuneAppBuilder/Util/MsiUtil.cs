@@ -10,7 +10,8 @@ using File = System.IO.File;
 namespace IntuneAppBuilder.Util
 {
     /// <summary>
-    ///     Helper for reading MSI metadata. Relies on Windows OS. When the tool is not run on Windows, reading MSI metadata will be skipped.
+    ///     Helper for reading MSI metadata. Relies on Windows OS. When the tool is not run on Windows, reading MSI metadata
+    ///     will be skipped.
     /// </summary>
 #pragma warning disable S3881 // "IDisposable" should be implemented correctly
     internal class MsiUtil : IDisposable
@@ -81,19 +82,6 @@ namespace IntuneAppBuilder.Util
             return (info, manifest);
         }
 
-        private string GetMsiExecutionContext(Win32LobAppMsiPackageType? type)
-        {
-            switch (type)
-            {
-                case Win32LobAppMsiPackageType.PerUser:
-                    return "User";
-                case Win32LobAppMsiPackageType.PerMachine:
-                    return "System";
-                default:
-                    return "Any";
-            }
-        }
-
         private MobileMsiManifest GetManifest(Win32LobAppMsiInformation info)
         {
 #pragma warning disable S125 // Sections of code should not be commented out
@@ -107,13 +95,24 @@ namespace IntuneAppBuilder.Util
             };
         }
 
-        private bool IsUserInstall()
+        private string GetMsiExecutionContext(Win32LobAppMsiPackageType? type)
         {
-            return GetPackageType() is { } type
-                   && type == Win32LobAppMsiPackageType.PerUser
-                   || (type == Win32LobAppMsiPackageType.DualPurpose
-                       && !string.IsNullOrEmpty(ReadProperty("MSIINSTALLPERUSER", false)));
+            switch (type)
+            {
+                case Win32LobAppMsiPackageType.PerUser:
+                    return "User";
+                case Win32LobAppMsiPackageType.PerMachine:
+                    return "System";
+                default:
+                    return "Any";
+            }
         }
+
+        private bool IsUserInstall() =>
+            GetPackageType() is { } type
+            && type == Win32LobAppMsiPackageType.PerUser
+            || type == Win32LobAppMsiPackageType.DualPurpose
+            && !string.IsNullOrEmpty(ReadProperty("MSIINSTALLPERUSER", false));
 
         private Win32LobAppMsiPackageType GetPackageType()
         {

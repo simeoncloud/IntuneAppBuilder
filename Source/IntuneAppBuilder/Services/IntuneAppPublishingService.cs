@@ -14,7 +14,6 @@ using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace IntuneAppBuilder.Services
 {
-    /// <inheritdoc />
     internal class IntuneAppPublishingService : IIntuneAppPublishingService
     {
         private readonly ILogger logger;
@@ -26,7 +25,6 @@ namespace IntuneAppBuilder.Services
             this.msGraphClient = msGraphClient;
         }
 
-        /// <inheritdoc />
         public async Task PublishAsync(IntuneAppPackage package)
         {
             logger.LogInformation($"Publishing Intune app package for {package.App.DisplayName}.");
@@ -44,21 +42,90 @@ namespace IntuneAppBuilder.Services
             if (app.CommittedContentVersion == null) content = (await requestBuilder.ContentVersions.Request().OrderBy("id desc").GetAsync()).FirstOrDefault();
 
             content ??= await requestBuilder.ContentVersions.Request().AddAsync(new MobileAppContent());
-            
+
             // manifests are only supported if the app is a WindowsMobileMSI (not a Win32 app installing an msi)
             if (!(app is WindowsMobileMSI)) package.File.Manifest = null;
 
             await CreateAppContentFileAsync(requestBuilder.ContentVersions[content.Id], package);
 
-            MobileLobApp update = (MobileLobApp)Activator.CreateInstance(package.App.GetType());
+            var update = (MobileLobApp)Activator.CreateInstance(package.App.GetType());
             update.CommittedContentVersion = content.Id;
             await msGraphClient.DeviceAppManagement.MobileApps[app.Id].Request().UpdateAsync(update);
 
             logger.LogInformation($"Published Intune app package for {app.DisplayName} in {sw.ElapsedMilliseconds}ms.");
         }
 
+        private async Task<MobileAppContentFile> AddContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package) =>
+            await requestBuilder.Files.Request()
+                .WithMaxRetry(10)
+                .WithRetryDelay(30)
+                .WithShouldRetry((delay, count, r) => r.StatusCode == HttpStatusCode.NotFound)
+                .AddAsync(package.File);
+
+        private async Task CreateAppContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
+        {
+            // add content file
+            var contentFile = await AddContentFileAsync(requestBuilder, package);
+
+            // refetch until we can get the uri to upload to
+            contentFile = await WaitForStateAsync(requestBuilder.Files[contentFile.Id], MobileAppContentFileUploadState.AzureStorageUriRequestSuccess);
+
+            var sw = Stopwatch.StartNew();
+
+            await CreateBlobAsync(package, contentFile, requestBuilder.Files[contentFile.Id]);
+
+            logger.LogInformation($"Uploaded app content file in {sw.ElapsedMilliseconds}ms.");
+
+            // commit
+            await requestBuilder.Files[contentFile.Id].Commit(package.EncryptionInfo).Request().PostAsync();
+
+            // refetch until has committed
+            await WaitForStateAsync(requestBuilder.Files[contentFile.Id], MobileAppContentFileUploadState.CommitFileSuccess);
+        }
+
+        private async Task CreateBlobAsync(IntuneAppPackage package, MobileAppContentFile contentFile, IMobileAppContentFileRequestBuilder contentFileRequestBuilder)
+        {
+            var blockCount = 0;
+            var blockIds = new List<string>();
+
+            const int chunkSize = 25 * 1024 * 1024;
+            package.Data.Seek(0, SeekOrigin.Begin);
+            var lastBlockId = (Math.Ceiling((double)package.Data.Length / chunkSize) - 1).ToString("0000");
+            var sw = Stopwatch.StartNew();
+            foreach (var chunk in Chunk(package.Data, chunkSize, false))
+            {
+                if (sw.ElapsedMilliseconds >= 450000)
+                {
+                    contentFile = await RenewStorageUri(contentFileRequestBuilder);
+                    sw.Restart();
+                }
+
+                var blockId = blockCount++.ToString("0000");
+                logger.LogInformation($"Uploading block {blockId} of {lastBlockId} to {contentFile.AzureStorageUri}.");
+
+                await using (var ms = new MemoryStream(chunk))
+                {
+                    try
+                    {
+                        await TryPutBlockAsync(contentFile, blockId, ms);
+                    }
+                    catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 403)
+                    {
+                        // normally the timer should account for renewing upload URIs, but the Intune APIs are fundamentally unstable and sometimes 403s will be encountered randomly
+                        contentFile = await RenewStorageUri(contentFileRequestBuilder);
+                        sw.Restart();
+                        await TryPutBlockAsync(contentFile, blockId, ms);
+                    }
+                }
+
+                blockIds.Add(blockId);
+            }
+
+            await new CloudBlockBlob(new Uri(contentFile.AzureStorageUri)).PutBlockListAsync(blockIds);
+        }
+
         /// <summary>
-        /// Gets an existing or creates a new app.
+        ///     Gets an existing or creates a new app.
         /// </summary>
         /// <param name="app"></param>
         /// <returns></returns>
@@ -67,7 +134,9 @@ namespace IntuneAppBuilder.Services
             MobileLobApp result;
             if (Guid.TryParse(app.Id, out var _))
                 // resolve from id
+            {
                 result = await msGraphClient.DeviceAppManagement.MobileApps[app.Id].Request().GetAsync() as MobileLobApp ?? throw new ArgumentException($"App {app.Id} should be a {nameof(MobileLobApp)}.", nameof(app));
+            }
             else
             {
                 // resolve from name
@@ -92,8 +161,89 @@ namespace IntuneAppBuilder.Services
             return result;
         }
 
+        private async Task<MobileAppContentFile> RenewStorageUri(IMobileAppContentFileRequestBuilder contentFileRequestBuilder)
+        {
+            logger.LogInformation($"Renewing SAS URI for {contentFileRequestBuilder.RequestUrl}.");
+            await contentFileRequestBuilder.RenewUpload().Request().PostAsync();
+            return await WaitForStateAsync(contentFileRequestBuilder, MobileAppContentFileUploadState.AzureStorageUriRenewalSuccess);
+        }
+
+        private async Task TryPutBlockAsync(MobileAppContentFile contentFile, string blockId, Stream stream)
+        {
+            var attemptCount = 0;
+            var position = stream.Position;
+            while (true)
+                try
+                {
+                    await new CloudBlockBlob(new Uri(contentFile.AzureStorageUri)).PutBlockAsync(blockId, stream, null);
+                    break;
+                }
+                catch (StorageException ex)
+                {
+                    if (!new[] { 307, 403, 400 }.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 30) throw;
+                    logger.LogInformation($"Encountered retryable error ({ex.RequestInformation.HttpStatusCode}) uploading blob to {contentFile.AzureStorageUri} - will retry in 10 seconds.");
+                    stream.Position = position;
+                    await Task.Delay(10000);
+                }
+        }
+
+        // waits for the desired status, refreshing the file along the way
+        private async Task<MobileAppContentFile> WaitForStateAsync(IMobileAppContentFileRequestBuilder contentFileRequestBuilder, MobileAppContentFileUploadState state)
+        {
+            logger.LogInformation($"Waiting for app content file to have a state of {state}.");
+
+            var waitStopwatch = Stopwatch.StartNew();
+
+            while (true)
+            {
+                var contentFile = await contentFileRequestBuilder.Request().GetAsync();
+
+                if (contentFile.UploadState == state)
+                {
+                    logger.LogInformation($"Waited {waitStopwatch.ElapsedMilliseconds}ms for app content file to have a state of {state}.");
+                    return contentFile;
+                }
+
+                var failedStates = new[]
+                {
+                    MobileAppContentFileUploadState.AzureStorageUriRequestFailed,
+                    MobileAppContentFileUploadState.AzureStorageUriRenewalFailed,
+                    MobileAppContentFileUploadState.CommitFileFailed
+                };
+
+                if (failedStates.Contains(contentFile.UploadState.GetValueOrDefault())) throw new InvalidOperationException($"{nameof(contentFile.UploadState)} is in a failed state of {contentFile.UploadState} - was waiting for {state}.");
+                const int waitTimeout = 600000;
+                const int testInterval = 2000;
+                if (waitStopwatch.ElapsedMilliseconds > waitTimeout) throw new InvalidOperationException($"Timed out waiting for {nameof(contentFile.UploadState)} of {state} - current state is {contentFile.UploadState}.");
+                await Task.Delay(testInterval);
+            }
+        }
+
         /// <summary>
-        /// Gets a copy of the app with default values for null properties that are required.
+        ///     Chunks a stream into buffers.
+        /// </summary>
+        private static IEnumerable<byte[]> Chunk(Stream source, int chunkSize, bool disposeSourceStream = true)
+        {
+            var buffer = new byte[chunkSize];
+
+            try
+            {
+                int bytesRead;
+                while ((bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    var chunk = new byte[bytesRead];
+                    Array.Copy(buffer, chunk, chunk.Length);
+                    yield return chunk;
+                }
+            }
+            finally
+            {
+                if (disposeSourceStream) source.Dispose();
+            }
+        }
+
+        /// <summary>
+        ///     Gets a copy of the app with default values for null properties that are required.
         /// </summary>
         /// <param name="app"></param>
         private static void SetDefaults(MobileLobApp app)
@@ -131,137 +281,6 @@ namespace IntuneAppBuilder.Services
                         };
                     }
                 }
-            }
-        }
-
-        private async Task CreateAppContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
-        {
-            // add content file
-            var contentFile = await AddContentFileAsync(requestBuilder, package);
-
-            // waits for the desired status, refreshing the file along the way
-            async Task WaitForStateAsync(MobileAppContentFileUploadState state)
-            {
-                logger.LogInformation($"Waiting for app content file to have a state of {state}.");
-
-                // ReSharper disable AccessToModifiedClosure - intended
-
-                var waitStopwatch = Stopwatch.StartNew();
-
-                while (true)
-                {
-                    contentFile = await requestBuilder.Files[contentFile.Id].Request().GetAsync();
-
-                    if (contentFile.UploadState == state)
-                    {
-                        logger.LogInformation($"Waited {waitStopwatch.ElapsedMilliseconds}ms for app content file to have a state of {state}.");
-                        return;
-                    }
-
-                    var failedStates = new[]
-                    {
-                        MobileAppContentFileUploadState.AzureStorageUriRequestFailed,
-                        MobileAppContentFileUploadState.AzureStorageUriRenewalFailed,
-                        MobileAppContentFileUploadState.CommitFileFailed
-                    };
-
-                    if (failedStates.Contains(contentFile.UploadState.GetValueOrDefault())) throw new InvalidOperationException($"{nameof(contentFile.UploadState)} is in a failed state of {contentFile.UploadState} - was waiting for {state}.");
-                    const int waitTimeout = 240000;
-                    const int testInterval = 2000;
-                    if (waitStopwatch.ElapsedMilliseconds > waitTimeout) throw new InvalidOperationException($"Timed out waiting for {nameof(contentFile.UploadState)} of {state} - current state is {contentFile.UploadState}.");
-                    await Task.Delay(testInterval);
-                }
-                // ReSharper restore AccessToModifiedClosure
-            }
-
-            // refetch until we can get the uri to upload to
-            await WaitForStateAsync(MobileAppContentFileUploadState.AzureStorageUriRequestSuccess);
-
-            var sw = Stopwatch.StartNew();
-
-            await CreateBlobAsync(package, contentFile);
-
-            logger.LogInformation($"Uploaded app content file in {sw.ElapsedMilliseconds}ms.");
-
-            // commit
-            await requestBuilder.Files[contentFile.Id].Commit(package.EncryptionInfo).Request().PostAsync();
-
-            // refetch until has committed
-            await WaitForStateAsync(MobileAppContentFileUploadState.CommitFileSuccess);
-        }
-
-        private async Task CreateBlobAsync(IntuneAppPackage package, MobileAppContentFile contentFile)
-        {
-            var blockCount = 0;
-            var blockIds = new List<string>();
-
-            const int chunkSize = 25 * 1024 * 1024;
-            package.Data.Seek(0, SeekOrigin.Begin);
-            var lastBlockId = (Math.Ceiling((double)package.Data.Length / chunkSize) - 1).ToString("0000");
-            foreach (var chunk in Chunk(package.Data, chunkSize, false))
-            {
-                var blockId = blockCount++.ToString("0000");
-                logger.LogInformation($"Uploading block {blockId} of {lastBlockId} to {contentFile.AzureStorageUri}.");
-
-                await using (var ms = new MemoryStream(chunk))
-                {
-                    await TryPutBlockAsync(contentFile, blockId, ms);
-                }
-
-                blockIds.Add(blockId);
-            }
-
-            await new CloudBlockBlob(new Uri(contentFile.AzureStorageUri)).PutBlockListAsync(blockIds);
-        }
-
-        private async Task TryPutBlockAsync(MobileAppContentFile contentFile, string blockId, Stream stream)
-        {
-            var attemptCount = 0;
-            var position = stream.Position;
-            while (true)
-                try
-                {
-                    await new CloudBlockBlob(new Uri(contentFile.AzureStorageUri)).PutBlockAsync(blockId, stream, null);
-                    break;
-                }
-                catch (StorageException ex)
-                {
-                    if (!new[] { 307, 403, 400 }.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 50) throw;
-                    logger.LogInformation($"Encountered retryable error ({ex.RequestInformation.HttpStatusCode}) uploading blob to {contentFile.AzureStorageUri} - will retry in 10 seconds.");
-                    stream.Position = position;
-                    await Task.Delay(10000);
-                }
-        }
-
-        private async Task<MobileAppContentFile> AddContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
-        {
-            return await requestBuilder.Files.Request()
-                .WithMaxRetry(10)
-                .WithRetryDelay(30)
-                .WithShouldRetry((delay, count, r) => r.StatusCode == HttpStatusCode.NotFound)
-                .AddAsync(package.File);
-        }
-
-        /// <summary>
-        ///     Chunks a stream into buffers.
-        /// </summary>
-        private static IEnumerable<byte[]> Chunk(Stream source, int chunkSize, bool disposeSourceStream = true)
-        {
-            var buffer = new byte[chunkSize];
-
-            try
-            {
-                int bytesRead;
-                while ((bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    var chunk = new byte[bytesRead];
-                    Array.Copy(buffer, chunk, chunk.Length);
-                    yield return chunk;
-                }
-            }
-            finally
-            {
-                if (disposeSourceStream) source.Dispose();
             }
         }
     }
