@@ -103,17 +103,19 @@ namespace IntuneAppBuilder.Services
                 var blockId = blockCount++.ToString("0000");
                 logger.LogInformation($"Uploading block {blockId} of {lastBlockId} to {contentFile.AzureStorageUri}.");
 
-                try
+                await using (var ms = new MemoryStream(chunk))
                 {
-                    await using (var ms = new MemoryStream(chunk))
+                    try
                     {
                         await TryPutBlockAsync(contentFile, blockId, ms);
                     }
-                }
-                catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 403)
-                {
-                    contentFile = await RenewStorageUri(contentFileRequestBuilder);
-                    sw.Restart();
+                    catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 403)
+                    {
+                        // normally the timer should account for renewing upload URIs, but the Intune APIs are fundamentally unstable and sometimes 403s will be encountered randomly
+                        contentFile = await RenewStorageUri(contentFileRequestBuilder);
+                        sw.Restart();
+                        await TryPutBlockAsync(contentFile, blockId, ms);
+                    }
                 }
 
                 blockIds.Add(blockId);
