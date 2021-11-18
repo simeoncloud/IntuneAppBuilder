@@ -17,7 +17,7 @@ using File = System.IO.File;
 
 namespace IntuneAppBuilder.Services
 {
-    internal class IntuneAppPackagingService : IIntuneAppPackagingService
+    internal sealed class IntuneAppPackagingService : IIntuneAppPackagingService
     {
         private readonly ILogger logger;
 
@@ -280,7 +280,7 @@ namespace IntuneAppBuilder.Services
             if (Directory.Exists(sourcePath))
             {
                 sourcePath = Path.GetFullPath(sourcePath);
-                zipFilePath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(Path.GetFullPath(sourcePath))}.intunewin.zip");
+                zipFilePath = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}.{Path.GetFileNameWithoutExtension(Path.GetFullPath(sourcePath))}.intunewin.zip");
                 if (File.Exists(zipFilePath)) File.Delete(zipFilePath);
                 logger.LogInformation($"Creating intermediate zip of {sourcePath} at {zipFilePath}.");
                 ZipFile.CreateFromDirectory(sourcePath, zipFilePath, CompressionLevel.Optimal, false);

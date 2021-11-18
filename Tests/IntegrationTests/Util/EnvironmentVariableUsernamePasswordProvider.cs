@@ -12,7 +12,7 @@ namespace IntuneAppBuilder.IntegrationTests.Util
     /// <summary>
     /// Auth provider for Graph client that uses environment variables and resource owner flow.
     /// </summary>
-    public class EnvironmentVariableUsernamePasswordProvider : IAuthenticationProvider
+    public sealed class EnvironmentVariableUsernamePasswordProvider : IAuthenticationProvider
     {
         private readonly Lazy<AuthenticationProviderOption> authenticationProviderOption = new Lazy<AuthenticationProviderOption>(() =>
         {

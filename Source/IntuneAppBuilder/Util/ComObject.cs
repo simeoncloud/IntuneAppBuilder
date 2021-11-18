@@ -11,11 +11,11 @@ namespace IntuneAppBuilder.Util
     /// <summary>
     ///     dotnet core doesn't support COM using dynamic.
     /// </summary>
-    internal class ComObject : DynamicObject, IDisposable
+    internal sealed class ComObject : DynamicObject, IDisposable
     {
         private readonly object instance;
 
-        public ComObject(object instance) => this.instance = instance;
+        private ComObject(object instance) => this.instance = instance;
 
         public void Dispose() => Marshal.FinalReleaseComObject(instance);
 

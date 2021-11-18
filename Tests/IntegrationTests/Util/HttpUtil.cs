@@ -14,7 +14,7 @@ namespace IntuneAppBuilder.IntegrationTests.Util
         /// <summary>
         ///     Downloads a file using an HttpClient.
         /// </summary>
-        public static async Task DownloadFileAsync(this HttpClient client, HttpRequestMessage request, string filePath = null)
+        private static async Task DownloadFileAsync(this HttpClient client, HttpRequestMessage request, string filePath = null)
         {
             await using (Stream contentStream = await (await client.SendAsync(request)).EnsureSuccessStatusCode().Content.ReadAsStreamAsync(),
                 fileStream = new FileStream(filePath ?? Path.GetFileName(request.RequestUri.LocalPath), FileMode.Create, FileAccess.Write, FileShare.None, 1024, true))

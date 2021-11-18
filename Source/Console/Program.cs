@@ -54,7 +54,7 @@ namespace IntuneAppBuilder.Console
         /// </summary>
         /// <param name="sources"></param>
         /// <param name="services"></param>
-        internal static void AddBuilders(IEnumerable<FileSystemInfo> sources, IServiceCollection services)
+        private static void AddBuilders(IEnumerable<FileSystemInfo> sources, IServiceCollection services)
         {
             foreach (var source in sources)
             {

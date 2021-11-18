@@ -16,7 +16,7 @@ using Program = IntuneAppBuilder.Console.Program;
 
 namespace IntuneAppBuilder.IntegrationTests
 {
-    public class ProgramTests
+    public sealed class ProgramTests
     {
         private readonly ITestOutputHelper testOutputHelper;
 
