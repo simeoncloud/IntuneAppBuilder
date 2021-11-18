@@ -14,7 +14,7 @@ namespace IntuneAppBuilder.Util
     ///     will be skipped.
     /// </summary>
 #pragma warning disable S3881 // "IDisposable" should be implemented correctly
-    internal class MsiUtil : IDisposable
+    internal sealed class MsiUtil : IDisposable
 #pragma warning restore S3881 // "IDisposable" should be implemented correctly
     {
         private readonly dynamic database;

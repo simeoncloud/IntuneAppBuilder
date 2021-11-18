@@ -14,7 +14,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace IntuneAppBuilder.Services
 {
-    internal class IntuneAppPublishingService : IIntuneAppPublishingService
+    internal sealed class IntuneAppPublishingService : IIntuneAppPublishingService
     {
         private readonly ILogger logger;
         private readonly IGraphServiceClient msGraphClient;
