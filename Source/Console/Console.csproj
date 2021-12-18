@@ -13,7 +13,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.CommandLine" Version="2.0.0-*" />
+		<PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21308.1" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
 	</ItemGroup>
 
