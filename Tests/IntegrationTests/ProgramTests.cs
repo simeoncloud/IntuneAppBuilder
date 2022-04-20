@@ -116,7 +116,7 @@ public sealed class ProgramTests
         foreach (var app in apps)
         {
             await graph.DeviceAppManagement.MobileApps[app.Id].Request()
-                .WithMaxRetry(3).WithShouldRetry((d, a, r) => true)
+                .WithMaxRetry(3).WithShouldRetry((d, a, r) => !r.IsSuccessStatusCode)
                 .DeleteAsync();
         }
     }
