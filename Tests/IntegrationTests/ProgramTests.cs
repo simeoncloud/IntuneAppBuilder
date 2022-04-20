@@ -111,7 +111,7 @@ namespace IntuneAppBuilder.IntegrationTests
 
         private async Task DeleteAppAsync(string name)
         {
-            var graph = GetServices().BuildServiceProvider().GetRequiredService<IGraphServiceClient>();
+            var graph = GetServices().BuildServiceProvider().GetRequiredService<GraphServiceClient>();
             var apps = (await graph.DeviceAppManagement.MobileApps.Request().Filter($"displayName eq '{name}'").GetAsync()).OfType<MobileLobApp>();
             foreach (var app in apps)
             {
@@ -123,7 +123,7 @@ namespace IntuneAppBuilder.IntegrationTests
 
         private IServiceCollection GetServices() =>
             Program.GetServices()
-                .AddSingleton<IGraphServiceClient>(sp => new GraphServiceClient(new EnvironmentVariableUsernamePasswordProvider()));
+                .AddSingleton(sp => new GraphServiceClient(new EnvironmentVariableUsernamePasswordProvider()));
 
         private static async Task ExecuteInDirectory(string path, Func<Task> action)
         {

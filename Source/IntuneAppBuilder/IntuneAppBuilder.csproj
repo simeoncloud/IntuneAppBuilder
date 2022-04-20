@@ -13,7 +13,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Http" Version="2.2.0" />
-		<PackageReference Include="Microsoft.Graph.Beta" Version="0.47.0-preview" />
+		<PackageReference Include="Microsoft.Graph.Beta" Version="4.38.0-preview" />
 		<PackageReference Include="Microsoft.Graph.Auth" Version="1.0.0-preview.4" />
 		<PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />

@@ -23,7 +23,7 @@ namespace IntuneAppBuilder
             services.TryAddSingleton(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient());
             services.TryAddTransient<IIntuneAppPublishingService, IntuneAppPublishingService>();
             services.TryAddTransient<IIntuneAppPackagingService, IntuneAppPackagingService>();
-            services.TryAddSingleton<IGraphServiceClient>(sp => new GraphServiceClient(CreateDefaultAuthenticationProvider()));
+            services.TryAddSingleton(sp => new GraphServiceClient(CreateDefaultAuthenticationProvider()));
             return services;
         }
 

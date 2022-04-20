@@ -17,9 +17,9 @@ namespace IntuneAppBuilder.Services
     internal sealed class IntuneAppPublishingService : IIntuneAppPublishingService
     {
         private readonly ILogger logger;
-        private readonly IGraphServiceClient msGraphClient;
+        private readonly GraphServiceClient msGraphClient;
 
-        public IntuneAppPublishingService(ILogger<IntuneAppPublishingService> logger, IGraphServiceClient msGraphClient)
+        public IntuneAppPublishingService(ILogger<IntuneAppPublishingService> logger, GraphServiceClient msGraphClient)
         {
             this.logger = logger;
             this.msGraphClient = msGraphClient;
