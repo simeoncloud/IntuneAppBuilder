@@ -29,7 +29,9 @@ internal static class Program
             new Option<string>(new[] { "--output", "-o" }, () => ".",
                 "Specifies an output directory for packaging artifacts. Each packaged application will exist as a raw intunewin file, a portal-ready portal.intunewin file, and an intunewin.json file containing metadata. Defaults to the working directory.")
         };
+#pragma warning disable S3011
         pack.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PackAsync), BindingFlags.Static | BindingFlags.NonPublic)!);
+#pragma warning restore S3011
 
         var publish = new Command("publish")
         {
@@ -37,7 +39,9 @@ internal static class Program
                     "Specifies a source to publish. May be a directory with *.intunewin.json files or a single json file")
                 { Name = "sources", IsRequired = true }
         };
+#pragma warning disable S3011
         publish.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PublishAsync), BindingFlags.Static | BindingFlags.NonPublic)!);
+#pragma warning restore S3011
 
         var root = new RootCommand
         {
@@ -156,7 +160,7 @@ internal static class Program
         var dataPath = Path.Combine(file.DirectoryName!, Path.GetFileNameWithoutExtension(file.FullName));
         if (!File.Exists(dataPath)) throw new FileNotFoundException($"Could not find data file at {dataPath}.");
         logger.LogInformation($"Using package data file {dataPath}");
-        package.Data = File.Open(dataPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        package!.Data = File.Open(dataPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return package;
     }
 }
