@@ -6,7 +6,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="SonarAnalyzer.CSharp" Version="8.2.*" />
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="8.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
 	</ItemGroup>
 
 	<Target Name="GetVersion" BeforeTargets="DispatchToInnerBuilds;BeforeBuild;CoreBuild;GetAssemblyVersion;CoreCompile;GenerateNuspec;EnsureWixToolsetInstalled">
