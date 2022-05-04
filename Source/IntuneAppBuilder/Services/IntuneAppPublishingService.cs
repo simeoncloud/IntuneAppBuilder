@@ -17,9 +17,9 @@ namespace IntuneAppBuilder.Services
     internal sealed class IntuneAppPublishingService : IIntuneAppPublishingService
     {
         private readonly ILogger logger;
-        private readonly IGraphServiceClient msGraphClient;
+        private readonly GraphServiceClient msGraphClient;
 
-        public IntuneAppPublishingService(ILogger<IntuneAppPublishingService> logger, IGraphServiceClient msGraphClient)
+        public IntuneAppPublishingService(ILogger<IntuneAppPublishingService> logger, GraphServiceClient msGraphClient)
         {
             this.logger = logger;
             this.msGraphClient = msGraphClient;
@@ -59,7 +59,7 @@ namespace IntuneAppBuilder.Services
             await requestBuilder.Files.Request()
                 .WithMaxRetry(10)
                 .WithRetryDelay(30)
-                .WithShouldRetry((delay, count, r) => r.StatusCode == HttpStatusCode.NotFound)
+                .WithShouldRetry((_, _, r) => r.StatusCode == HttpStatusCode.NotFound)
                 .AddAsync(package.File);
 
         private async Task CreateAppContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
@@ -250,36 +250,41 @@ namespace IntuneAppBuilder.Services
         {
             if (app is Win32LobApp win32)
             {
-                // set required properties with default values if not already specified - can be changed later in the portal
-                win32.InstallExperience ??= new Win32LobAppInstallExperience { RunAsAccount = RunAsAccountType.System };
-                win32.InstallCommandLine ??= win32.MsiInformation == null ? win32.SetupFilePath : $"msiexec /i \"{win32.SetupFilePath}\"";
-                win32.UninstallCommandLine ??= win32.MsiInformation == null ? "echo Not Supported" : $"msiexec /x \"{win32.MsiInformation.ProductCode}\"";
-                win32.Publisher ??= "-";
-                win32.ApplicableArchitectures = WindowsArchitecture.X86 | WindowsArchitecture.X64;
-                win32.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V10_1607 = true };
-                if (win32.DetectionRules == null)
+                SetDefaults(win32);
+            }
+        }
+
+        private static void SetDefaults(Win32LobApp app)
+        {
+            // set required properties with default values if not already specified - can be changed later in the portal
+            app.InstallExperience ??= new Win32LobAppInstallExperience { RunAsAccount = RunAsAccountType.System };
+            app.InstallCommandLine ??= app.MsiInformation == null ? app.SetupFilePath : $"msiexec /i \"{app.SetupFilePath}\"";
+            app.UninstallCommandLine ??= app.MsiInformation == null ? "echo Not Supported" : $"msiexec /x \"{app.MsiInformation.ProductCode}\"";
+            app.Publisher ??= "-";
+            app.ApplicableArchitectures = WindowsArchitecture.X86 | WindowsArchitecture.X64;
+            app.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V10_1607 = true };
+            if (app.DetectionRules == null)
+            {
+                if (app.MsiInformation == null)
                 {
-                    if (win32.MsiInformation == null)
+                    // no way to infer - use empty PS script
+                    app.DetectionRules = new[]
                     {
-                        // no way to infer - use empty PS script
-                        win32.DetectionRules = new[]
+                        new Win32LobAppPowerShellScriptDetection
                         {
-                            new Win32LobAppPowerShellScriptDetection
-                            {
-                                ScriptContent = Convert.ToBase64String(new byte[0])
-                            }
-                        };
-                    }
-                    else
+                            ScriptContent = Convert.ToBase64String(new byte[0])
+                        }
+                    };
+                }
+                else
+                {
+                    app.DetectionRules = new[]
                     {
-                        win32.DetectionRules = new[]
+                        new Win32LobAppProductCodeDetection
                         {
-                            new Win32LobAppProductCodeDetection
-                            {
-                                ProductCode = win32.MsiInformation.ProductCode
-                            }
-                        };
-                    }
+                            ProductCode = app.MsiInformation.ProductCode
+                        }
+                    };
                 }
             }
         }

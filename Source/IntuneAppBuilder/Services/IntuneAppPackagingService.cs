@@ -23,7 +23,9 @@ namespace IntuneAppBuilder.Services
 
         public IntuneAppPackagingService(ILogger<IntuneAppPackagingService> logger) => this.logger = logger;
 
+#pragma warning disable S1541
         public async Task<IntuneAppPackage> BuildPackageAsync(string sourcePath = ".", string setupFilePath = null)
+#pragma warning restore S1541
         {
             var sw = Stopwatch.StartNew();
 
@@ -45,7 +47,7 @@ namespace IntuneAppBuilder.Services
 
             logger.LogInformation($"Generating encrypted version of {sourcePath}.");
 
-            var data = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
+            var data = new FileStream(Path.GetRandomFileName(), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
             var encryptionInfo = await EncryptFileAsync(sourcePath, data);
             data.Position = 0;
 
@@ -135,11 +137,9 @@ namespace IntuneAppBuilder.Services
 
             byte[] CreateEncryptionKey()
             {
-                using (var provider = new AesCryptoServiceProvider())
-                {
-                    provider.GenerateKey();
-                    return provider.Key;
-                }
+                using var provider = Aes.Create();
+                provider.GenerateKey();
+                return provider.Key;
             }
 
             var encryptionKey = CreateEncryptionKey();
@@ -265,11 +265,13 @@ namespace IntuneAppBuilder.Services
 
         private (Win32LobAppMsiInformation Info, MobileMsiManifest Manifest) GetMsiInfo(string setupFilePath)
         {
-            if (".msi".Equals(Path.GetExtension(setupFilePath), StringComparison.OrdinalIgnoreCase))
+            if (OperatingSystem.IsWindows() && ".msi".Equals(Path.GetExtension(setupFilePath), StringComparison.OrdinalIgnoreCase))
+            {
                 using (var util = new MsiUtil(setupFilePath, logger))
                 {
                     return util.ReadMsiInfo();
                 }
+            }
 
             return default;
         }
