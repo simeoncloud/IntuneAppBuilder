@@ -250,37 +250,40 @@ namespace IntuneAppBuilder.Services
         {
             if (app is Win32LobApp win32)
             {
-                // set required properties with default values if not already specified - can be changed later in the portal
-                win32.InstallExperience ??= new Win32LobAppInstallExperience { RunAsAccount = RunAsAccountType.System };
-                win32.InstallCommandLine ??= win32.MsiInformation == null ? win32.SetupFilePath : $"msiexec /i \"{win32.SetupFilePath}\"";
-                win32.UninstallCommandLine ??= win32.MsiInformation == null ? "echo Not Supported" : $"msiexec /x \"{win32.MsiInformation.ProductCode}\"";
-                win32.Publisher ??= "-";
-                win32.ApplicableArchitectures = WindowsArchitecture.X86 | WindowsArchitecture.X64;
-                win32.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V10_1607 = true };
-                if (win32.DetectionRules == null)
+                SetDefaults(win32);
+            }
+        }
+
+        private static void SetDefaults(Win32LobApp win32)
+        {
+            // set required properties with default values if not already specified - can be changed later in the portal
+            win32.InstallExperience ??= new Win32LobAppInstallExperience { RunAsAccount = RunAsAccountType.System };
+            win32.InstallCommandLine ??= win32.MsiInformation == null ? win32.SetupFilePath : $"msiexec /i \"{win32.SetupFilePath}\"";
+            win32.UninstallCommandLine ??= win32.MsiInformation == null ? "echo Not Supported" : $"msiexec /x \"{win32.MsiInformation.ProductCode}\"";
+            win32.Publisher ??= "-";
+            win32.ApplicableArchitectures = WindowsArchitecture.X86 | WindowsArchitecture.X64;
+            win32.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V10_1607 = true };
+            if (win32.DetectionRules != null) return;
+            if (win32.MsiInformation == null)
+            {
+                // no way to infer - use empty PS script
+                win32.DetectionRules = new[]
                 {
-                    if (win32.MsiInformation == null)
+                    new Win32LobAppPowerShellScriptDetection
                     {
-                        // no way to infer - use empty PS script
-                        win32.DetectionRules = new[]
-                        {
-                            new Win32LobAppPowerShellScriptDetection
-                            {
-                                ScriptContent = Convert.ToBase64String(new byte[0])
-                            }
-                        };
+                        ScriptContent = Convert.ToBase64String(new byte[0])
                     }
-                    else
+                };
+            }
+            else
+            {
+                win32.DetectionRules = new[]
+                {
+                    new Win32LobAppProductCodeDetection
                     {
-                        win32.DetectionRules = new[]
-                        {
-                            new Win32LobAppProductCodeDetection
-                            {
-                                ProductCode = win32.MsiInformation.ProductCode
-                            }
-                        };
+                        ProductCode = win32.MsiInformation.ProductCode
                     }
-                }
+                };
             }
         }
     }

@@ -9,7 +9,7 @@ namespace IntuneAppBuilder.Domain
     ///     A statically typed manifest for an MSI app. Gets converted to a byte array and included on MobileAppContentFile.
     /// </summary>
     [XmlRoot("MobileMsiData")]
-    public class MobileMsiManifest
+    public sealed class MobileMsiManifest
     {
         [XmlAttribute]
         public bool MsiContainsSystemFolders { get; set; }
@@ -57,7 +57,7 @@ namespace IntuneAppBuilder.Domain
             return (MobileMsiManifest)serializer.Deserialize(ms);
         }
 
-        private class XmlWriter : XmlTextWriter
+        private sealed class XmlWriter : XmlTextWriter
         {
             public XmlWriter(Stream stream) : base(stream, Encoding.ASCII)
             {
@@ -65,7 +65,7 @@ namespace IntuneAppBuilder.Domain
 
             public override void WriteEndElement() =>
                 // do not auto-close xml tags
-                base.WriteFullEndElement();
+                WriteFullEndElement();
 
             public override void WriteStartDocument()
             {

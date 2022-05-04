@@ -29,7 +29,9 @@ namespace IntuneAppBuilder.Console
                 new Option<string>(new[] { "--output", "-o" }, () => ".",
                     "Specifies an output directory for packaging artifacts. Each packaged application will exist as a raw intunewin file, a portal-ready portal.intunewin file, and an intunewin.json file containing metadata. Defaults to the working directory.")
             };
+#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
             pack.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PackAsync), BindingFlags.Static | BindingFlags.NonPublic)!);
+#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
 
             var publish = new Command("publish")
             {
@@ -37,7 +39,9 @@ namespace IntuneAppBuilder.Console
                         "Specifies a source to publish. May be a directory with *.intunewin.json files or a single json file")
                     { Name = "sources", IsRequired = true }
             };
+#pragma warning disable S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
             publish.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PublishAsync), BindingFlags.Static | BindingFlags.NonPublic)!);
+#pragma warning restore S3011 // Reflection should not be used to increase accessibility of classes, methods, or fields
 
             var root = new RootCommand
             {
@@ -47,28 +51,6 @@ namespace IntuneAppBuilder.Console
             root.TreatUnmatchedTokensAsErrors = true;
 
             return await root.InvokeAsync(args);
-        }
-
-        /// <summary>
-        ///     Registers the correct builder type for each source from the command line.
-        /// </summary>
-        /// <param name="sources"></param>
-        /// <param name="services"></param>
-        private static void AddBuilders(IEnumerable<FileSystemInfo> sources, IServiceCollection services)
-        {
-            foreach (var source in sources)
-            {
-                if (!source.Exists) throw new InvalidOperationException($"{source.FullName} does not exist.");
-
-                if (source.Extension.Equals(".msi", StringComparison.OrdinalIgnoreCase) || source is DirectoryInfo)
-                {
-                    services.AddSingleton<IIntuneAppPackageBuilder>(sp => ActivatorUtilities.CreateInstance<PathIntuneAppPackageBuilder>(sp, source.FullName));
-                }
-                else
-                {
-                    throw new InvalidOperationException($"{source} is not a supported packaging source.");
-                }
-            }
         }
 
         internal static IServiceCollection GetServices()
@@ -109,6 +91,28 @@ namespace IntuneAppBuilder.Console
             {
                 using var package = ReadPackage(file, logger);
                 await publishingService.PublishAsync(package);
+            }
+        }
+
+        /// <summary>
+        ///     Registers the correct builder type for each source from the command line.
+        /// </summary>
+        /// <param name="sources"></param>
+        /// <param name="services"></param>
+        private static void AddBuilders(IEnumerable<FileSystemInfo> sources, IServiceCollection services)
+        {
+            foreach (var source in sources)
+            {
+                if (!source.Exists) throw new InvalidOperationException($"{source.FullName} does not exist.");
+
+                if (source.Extension.Equals(".msi", StringComparison.OrdinalIgnoreCase) || source is DirectoryInfo)
+                {
+                    services.AddSingleton<IIntuneAppPackageBuilder>(sp => ActivatorUtilities.CreateInstance<PathIntuneAppPackageBuilder>(sp, source.FullName));
+                }
+                else
+                {
+                    throw new InvalidOperationException($"{source} is not a supported packaging source.");
+                }
             }
         }
 

@@ -23,7 +23,9 @@ namespace IntuneAppBuilder.Services
 
         public IntuneAppPackagingService(ILogger<IntuneAppPackagingService> logger) => this.logger = logger;
 
+#pragma warning disable S1541 // Methods and properties should not be too complex
         public async Task<IntuneAppPackage> BuildPackageAsync(string sourcePath = ".", string setupFilePath = null)
+#pragma warning restore S1541 // Methods and properties should not be too complex
         {
             var sw = Stopwatch.StartNew();
 
@@ -45,7 +47,7 @@ namespace IntuneAppBuilder.Services
 
             logger.LogInformation($"Generating encrypted version of {sourcePath}.");
 
-            var data = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
+            var data = new FileStream(Path.GetRandomFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
             var encryptionInfo = await EncryptFileAsync(sourcePath, data);
             data.Position = 0;
 
