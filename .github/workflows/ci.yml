@@ -6,10 +6,12 @@ on:
   push:
     branches:
       - master
+      - V1
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
       - master
+      - V1
 
 env:
   BuildConfiguration: 'Release'
