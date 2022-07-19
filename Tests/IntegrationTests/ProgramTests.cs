@@ -145,8 +145,6 @@ namespace IntuneAppBuilder.IntegrationTests
                 }
                 catch (IOException)
                 {
-                    Thread.Sleep(5000);
-                    Directory.Delete(path, true);
                 }
             }
         }
