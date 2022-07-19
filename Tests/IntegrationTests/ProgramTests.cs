@@ -22,7 +22,7 @@ public sealed class ProgramTests
 
     public ProgramTests(ITestOutputHelper testOutputHelper) => this.testOutputHelper = testOutputHelper;
 
-    [Fact]
+    [Fact(Skip = "Run Manually")]
     public async Task LargeWin32() =>
         await ExecuteInDirectory($"C:\\temp\\{nameof(Win32)}", async () =>
         {
