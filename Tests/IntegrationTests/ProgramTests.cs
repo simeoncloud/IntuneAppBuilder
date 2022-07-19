@@ -145,6 +145,7 @@ namespace IntuneAppBuilder.IntegrationTests
                 }
                 catch (IOException)
                 {
+                    Trace.TraceInformation($"Failed to delete {path}.");
                 }
             }
         }
