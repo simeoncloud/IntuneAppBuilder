@@ -23,7 +23,7 @@ namespace IntuneAppBuilder.IntegrationTests
 
         public ProgramTests(ITestOutputHelper testOutputHelper) => this.testOutputHelper = testOutputHelper;
 
-        [Fact]
+        [Fact(Skip = "Run manually")]
         public async Task LargeWin32() =>
             await ExecuteInDirectory($"C:\\temp\\{nameof(Win32)}", async () =>
             {
