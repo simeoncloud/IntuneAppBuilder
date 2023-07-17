@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Graph.Beta.Models;
 using Microsoft.Graph.Beta.Models.ODataErrors;
@@ -16,6 +15,8 @@ namespace IntuneAppBuilder.Builders
 
         public MobileAppContentFileCommitRequestBuilder Commit => new(PathParameters, RequestAdapter);
 
+        public MobileAppContentFileRenewUploadRequestBuilder RenewUpload => new(PathParameters, RequestAdapter);
+
 #nullable enable
         public async Task<MobileAppContentFile?> GetAsync()
         {
@@ -28,8 +29,6 @@ namespace IntuneAppBuilder.Builders
             };
             return await RequestAdapter.SendAsync(requestInfo, MobileAppContentFile.CreateFromDiscriminatorValue, errorMapping);
         }
-
-        public MobileAppContentFileRenewUploadRequestBuilder RenewUpload => new(PathParameters, RequestAdapter);
 
         public RequestInformation ToGetRequestInformation()
         {
