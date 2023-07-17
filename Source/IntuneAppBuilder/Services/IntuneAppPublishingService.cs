@@ -167,7 +167,7 @@ namespace IntuneAppBuilder.Services
         private async Task<MobileAppContentFile> RenewStorageUri(MobileAppContentFileRequestBuilder contentFileRequestBuilder)
         {
             logger.LogInformation($"Renewing SAS URI for {contentFileRequestBuilder.ToGetRequestInformation().URI}.");
-            await contentFileRequestBuilder.RenewUpload().PostAsync();
+            await contentFileRequestBuilder.RenewUpload.PostAsync();
             return await WaitForStateAsync(contentFileRequestBuilder, MobileAppContentFileUploadState.AzureStorageUriRenewalSuccess);
         }
 

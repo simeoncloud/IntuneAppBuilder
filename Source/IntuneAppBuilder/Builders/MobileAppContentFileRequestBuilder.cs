@@ -29,7 +29,7 @@ namespace IntuneAppBuilder.Builders
             return await RequestAdapter.SendAsync(requestInfo, MobileAppContentFile.CreateFromDiscriminatorValue, errorMapping);
         }
 
-        public MobileAppContentFileRenewUploadRequestBuilder RenewUpload() => new(PathParameters, RequestAdapter);
+        public MobileAppContentFileRenewUploadRequestBuilder RenewUpload => new(PathParameters, RequestAdapter);
 
         public RequestInformation ToGetRequestInformation()
         {
