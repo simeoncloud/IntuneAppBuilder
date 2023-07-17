@@ -5,10 +5,12 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using IntuneAppBuilder.Builders;
 using IntuneAppBuilder.Domain;
-using IntuneAppBuilder.Util;
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph;
+using Microsoft.Graph.Beta;
+using Microsoft.Graph.Beta.Models;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 
@@ -33,36 +35,37 @@ namespace IntuneAppBuilder.Services
 
             var sw = Stopwatch.StartNew();
 
-            var requestBuilder = new MobileLobAppRequestBuilder(msGraphClient.DeviceAppManagement.MobileApps[app.Id]
-                .AppendSegmentToRequestUrl(app.ODataType.TrimStart('#')), msGraphClient);
+            var requestBuilder = msGraphClient.DeviceAppManagement.MobileApps[app.Id];
+            var contentVersionsRequestBuilder = requestBuilder.ContentVersions(app.OdataType.TrimStart('#'));
 
             MobileAppContent content = null;
 
             // if content has never been committed, need to use last created content if one exists, otherwise an error is thrown
-            if (app.CommittedContentVersion == null) content = (await requestBuilder.ContentVersions.Request().OrderBy("id desc").GetAsync()).FirstOrDefault();
+            if (app.CommittedContentVersion == null) content = (await contentVersionsRequestBuilder.GetAsync(requestConfiguration => requestConfiguration.QueryParameters.Orderby = new[] { "id desc" }))!.Value!.FirstOrDefault();
 
-            content ??= await requestBuilder.ContentVersions.Request().AddAsync(new MobileAppContent());
+            content ??= await contentVersionsRequestBuilder.PostAsync(new MobileAppContent());
 
             // manifests are only supported if the app is a WindowsMobileMSI (not a Win32 app installing an msi)
             if (!(app is WindowsMobileMSI)) package.File.Manifest = null;
 
-            await CreateAppContentFileAsync(requestBuilder.ContentVersions[content.Id], package);
+            await CreateAppContentFileAsync(contentVersionsRequestBuilder[content!.Id], package);
 
-            var update = (MobileLobApp)Activator.CreateInstance(package.App.GetType());
-            update.CommittedContentVersion = content.Id;
-            await msGraphClient.DeviceAppManagement.MobileApps[app.Id].Request().UpdateAsync(update);
+            var update = (MobileLobApp)Activator.CreateInstance(app.GetType());
+            update!.CommittedContentVersion = content.Id;
+            await msGraphClient.DeviceAppManagement.MobileApps[app.Id].PatchAsync(update);
 
             logger.LogInformation($"Published Intune app package for {app.DisplayName} in {sw.ElapsedMilliseconds}ms.");
         }
 
-        private async Task<MobileAppContentFile> AddContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package) =>
-            await requestBuilder.Files.Request()
-                .WithMaxRetry(10)
-                .WithRetryDelay(30)
-                .WithShouldRetry((_, _, r) => r.StatusCode == HttpStatusCode.NotFound)
-                .AddAsync(package.File);
+        private async Task<MobileAppContentFile> AddContentFileAsync(MobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package) =>
+            await requestBuilder.Files.PostAsync(package.File, requestConfiguration => requestConfiguration.Options.Add(new RetryHandlerOption
+            {
+                MaxRetry = 10,
+                Delay = 30,
+                ShouldRetry = (_, _, message) => message.StatusCode == HttpStatusCode.NotFound
+            }));
 
-        private async Task CreateAppContentFileAsync(IMobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
+        private async Task CreateAppContentFileAsync(MobileAppContentRequestBuilder requestBuilder, IntuneAppPackage package)
         {
             // add content file
             var contentFile = await AddContentFileAsync(requestBuilder, package);
@@ -77,13 +80,13 @@ namespace IntuneAppBuilder.Services
             logger.LogInformation($"Uploaded app content file in {sw.ElapsedMilliseconds}ms.");
 
             // commit
-            await requestBuilder.Files[contentFile.Id].Commit(package.EncryptionInfo).Request().PostAsync();
+            await requestBuilder.Files[contentFile.Id].Commit.PostAsync(new MobileAppContentFileCommitRequest { FileEncryptionInfo = package.EncryptionInfo });
 
             // refetch until has committed
             await WaitForStateAsync(requestBuilder.Files[contentFile.Id], MobileAppContentFileUploadState.CommitFileSuccess);
         }
 
-        private async Task CreateBlobAsync(IntuneAppPackage package, MobileAppContentFile contentFile, IMobileAppContentFileRequestBuilder contentFileRequestBuilder)
+        private async Task CreateBlobAsync(IntuneAppPackage package, MobileAppContentFile contentFile, MobileAppContentFileRequestBuilder contentFileRequestBuilder)
         {
             var blockCount = 0;
             var blockIds = new List<string>();
@@ -135,12 +138,12 @@ namespace IntuneAppBuilder.Services
             if (Guid.TryParse(app.Id, out var _))
                 // resolve from id
             {
-                result = await msGraphClient.DeviceAppManagement.MobileApps[app.Id].Request().GetAsync() as MobileLobApp ?? throw new ArgumentException($"App {app.Id} should be a {nameof(MobileLobApp)}.", nameof(app));
+                result = await msGraphClient.DeviceAppManagement.MobileApps[app.Id].GetAsync() as MobileLobApp ?? throw new ArgumentException($"App {app.Id} should be a {nameof(MobileLobApp)}.", nameof(app));
             }
             else
             {
                 // resolve from name
-                result = (await msGraphClient.DeviceAppManagement.MobileApps.Request().Filter($"displayName eq '{app.DisplayName}'").GetAsync()).OfType<MobileLobApp>().FirstOrDefault();
+                result = (await msGraphClient.DeviceAppManagement.MobileApps.GetAsync(requestConfiguration => requestConfiguration.QueryParameters.Filter = $"displayName eq '{app.DisplayName}'"))?.Value?.OfType<MobileLobApp>().FirstOrDefault();
             }
 
             if (result == null)
@@ -148,12 +151,12 @@ namespace IntuneAppBuilder.Services
                 SetDefaults(app);
                 // create new
                 logger.LogInformation($"App {app.DisplayName} does not exist - creating new app.");
-                result = (MobileLobApp)await msGraphClient.DeviceAppManagement.MobileApps.Request().AddAsync(app);
+                result = (MobileLobApp)await msGraphClient.DeviceAppManagement.MobileApps.PostAsync(app);
             }
 
-            if (app.ODataType.TrimStart('#') != result.ODataType.TrimStart('#'))
+            if (app.OdataType.TrimStart('#') != result.OdataType.TrimStart('#'))
             {
-                throw new NotSupportedException($"Found existing application {result.DisplayName}, but it of type {result.ODataType.TrimStart('#')} and the app being deployed is of type {app.ODataType.TrimStart('#')} - delete the existing app and try again.");
+                throw new NotSupportedException($"Found existing application {result.DisplayName}, but it of type {result.OdataType.TrimStart('#')} and the app being deployed is of type {app.OdataType.TrimStart('#')} - delete the existing app and try again.");
             }
 
             logger.LogInformation($"Using app {result.Id} ({result.DisplayName}).");
@@ -161,10 +164,10 @@ namespace IntuneAppBuilder.Services
             return result;
         }
 
-        private async Task<MobileAppContentFile> RenewStorageUri(IMobileAppContentFileRequestBuilder contentFileRequestBuilder)
+        private async Task<MobileAppContentFile> RenewStorageUri(MobileAppContentFileRequestBuilder contentFileRequestBuilder)
         {
-            logger.LogInformation($"Renewing SAS URI for {contentFileRequestBuilder.RequestUrl}.");
-            await contentFileRequestBuilder.RenewUpload().Request().PostAsync();
+            logger.LogInformation($"Renewing SAS URI for {contentFileRequestBuilder.ToGetRequestInformation().URI}.");
+            await contentFileRequestBuilder.RenewUpload().PostAsync();
             return await WaitForStateAsync(contentFileRequestBuilder, MobileAppContentFileUploadState.AzureStorageUriRenewalSuccess);
         }
 
@@ -188,7 +191,7 @@ namespace IntuneAppBuilder.Services
         }
 
         // waits for the desired status, refreshing the file along the way
-        private async Task<MobileAppContentFile> WaitForStateAsync(IMobileAppContentFileRequestBuilder contentFileRequestBuilder, MobileAppContentFileUploadState state)
+        private async Task<MobileAppContentFile> WaitForStateAsync(MobileAppContentFileRequestBuilder contentFileRequestBuilder, MobileAppContentFileUploadState state)
         {
             logger.LogInformation($"Waiting for app content file to have a state of {state}.");
 
@@ -196,7 +199,7 @@ namespace IntuneAppBuilder.Services
 
             while (true)
             {
-                var contentFile = await contentFileRequestBuilder.Request().GetAsync();
+                var contentFile = await contentFileRequestBuilder.GetAsync();
 
                 if (contentFile.UploadState == state)
                 {
@@ -261,14 +264,16 @@ namespace IntuneAppBuilder.Services
             app.InstallCommandLine ??= app.MsiInformation == null ? app.SetupFilePath : $"msiexec /i \"{app.SetupFilePath}\"";
             app.UninstallCommandLine ??= app.MsiInformation == null ? "echo Not Supported" : $"msiexec /x \"{app.MsiInformation.ProductCode}\"";
             app.Publisher ??= "-";
+#pragma warning disable S3265
             app.ApplicableArchitectures = WindowsArchitecture.X86 | WindowsArchitecture.X64;
-            app.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V10_1607 = true };
+#pragma warning restore S3265
+            app.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V101607 = true };
             if (app.DetectionRules == null)
             {
                 if (app.MsiInformation == null)
                 {
                     // no way to infer - use empty PS script
-                    app.DetectionRules = new[]
+                    app.DetectionRules = new List<Win32LobAppDetection>
                     {
                         new Win32LobAppPowerShellScriptDetection
                         {
@@ -278,7 +283,7 @@ namespace IntuneAppBuilder.Services
                 }
                 else
                 {
-                    app.DetectionRules = new[]
+                    app.DetectionRules = new List<Win32LobAppDetection>
                     {
                         new Win32LobAppProductCodeDetection
                         {

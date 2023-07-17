@@ -12,6 +12,9 @@ using IntuneAppBuilder.Domain;
 using IntuneAppBuilder.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Graph.Beta.Models;
+using Command = System.CommandLine.Command;
+using FileSystemInfo = System.IO.FileSystemInfo;
 
 namespace IntuneAppBuilder.Console;
 
@@ -157,10 +160,22 @@ internal static class Program
         logger.LogInformation($"Loading package from file {file.FullName}.");
 
         var package = JsonSerializer.Deserialize<IntuneAppPackage>(File.ReadAllText(file.FullName));
+        SetDefaults(package.File);
         var dataPath = Path.Combine(file.DirectoryName!, Path.GetFileNameWithoutExtension(file.FullName));
         if (!File.Exists(dataPath)) throw new FileNotFoundException($"Could not find data file at {dataPath}.");
         logger.LogInformation($"Using package data file {dataPath}");
         package!.Data = File.Open(dataPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return package;
+    }
+
+    private static void SetDefaults(MobileAppContentFile mobileAppContentFile)
+    {
+        mobileAppContentFile.OdataType = "microsoft.graph.mobileAppContentFile";
+        mobileAppContentFile.UploadState ??= default;
+        mobileAppContentFile.IsDependency ??= default;
+        mobileAppContentFile.CreatedDateTime ??= default;
+        mobileAppContentFile.Id ??= "";
+        mobileAppContentFile.IsCommitted ??= default;
+        mobileAppContentFile.IsFrameworkFile ??= default;
     }
 }

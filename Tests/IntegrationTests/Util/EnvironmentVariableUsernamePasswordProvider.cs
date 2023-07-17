@@ -1,44 +1,36 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Security;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Graph;
-using Microsoft.Graph.Auth;
-using Microsoft.Identity.Client;
+using Azure.Core;
+using Azure.Identity;
+using Microsoft.Graph.Authentication;
+using Microsoft.Kiota.Abstractions;
+using Microsoft.Kiota.Abstractions.Authentication;
 
-namespace IntuneAppBuilder.IntegrationTests.Util;
-
-/// <summary>
-///     Auth provider for Graph client that uses environment variables and resource owner flow.
-/// </summary>
-public sealed class EnvironmentVariableUsernamePasswordProvider : IAuthenticationProvider
+namespace IntuneAppBuilder.IntegrationTests.Util
 {
-    private readonly Lazy<AuthenticationProviderOption> authenticationProviderOption = new(() =>
+    /// <summary>
+    ///     Auth provider for Graph client that uses environment variables and resource owner flow.
+    /// </summary>
+    public sealed class EnvironmentVariableUsernamePasswordProvider : IAuthenticationProvider
     {
-        new[] { "Username", "Password" }.Select(var => $"AadAuth:{var}").Select(Environment.GetEnvironmentVariable).Where(string.IsNullOrEmpty).ToList()
-            .ForEach(missingVar => throw new InvalidOperationException($"Environment variable {missingVar} is not specified."));
-
-        var option = new AuthenticationProviderOption
+        private readonly Lazy<TokenCredential> tokenCredential = new(() =>
         {
-            UserAccount = new GraphUserAccount { Email = Environment.GetEnvironmentVariable("AadAuth:Username") },
-            Password = new SecureString()
-        };
+            new[] { "Username", "Password" }.Select(var => $"AadAuth:{var}").Select(Environment.GetEnvironmentVariable).Where(string.IsNullOrEmpty).ToList()
+                .ForEach(missingVar => throw new InvalidOperationException($"Environment variable {missingVar} is not specified."));
 
+            var username = Environment.GetEnvironmentVariable("AadAuth:Username");
+            return new UsernamePasswordCredential(
+                username,
+                Environment.GetEnvironmentVariable("AadAuth:Password"),
+                username?.Split('@').Last(),
+                "14d82eec-204b-4c2f-b7e8-296a70dab67e"); // Microsoft Graph PowerShell well known client id
+        });
 
-        Environment.GetEnvironmentVariable("AadAuth:Password")?.ToCharArray().ToList().ForEach(option.Password.AppendChar);
+        private IAuthenticationProvider InnerProvider => new AzureIdentityAuthenticationProvider(tokenCredential.Value, scopes: "DeviceManagementApps.ReadWrite.All");
 
-        return option;
-    });
-
-    private readonly IAuthenticationProvider innerProvider = new UsernamePasswordProvider(PublicClientApplicationBuilder
-        .Create("14d82eec-204b-4c2f-b7e8-296a70dab67e") // Microsoft Graph PowerShell well known client id
-        .WithTenantId(Environment.GetEnvironmentVariable("AadAuth:Username")?.Split('@').Last())
-        .Build(), new[] { "DeviceManagementApps.ReadWrite.All" });
-
-    public async Task AuthenticateRequestAsync(HttpRequestMessage request)
-    {
-        request.GetMiddlewareOption<AuthenticationHandlerOption>().AuthenticationProviderOption = authenticationProviderOption.Value;
-        await innerProvider.AuthenticateRequestAsync(request);
+        public async Task AuthenticateRequestAsync(RequestInformation request, Dictionary<string, object> additionalAuthenticationContext = default, CancellationToken cancellationToken = default) => await InnerProvider.AuthenticateRequestAsync(request, additionalAuthenticationContext, cancellationToken);
     }
 }

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using IntuneAppBuilder.Domain;
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph;
+using Microsoft.Graph.Beta.Models;
 using File = System.IO.File;
 
 namespace IntuneAppBuilder.Util;
