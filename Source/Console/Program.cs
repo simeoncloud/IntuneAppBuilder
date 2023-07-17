@@ -174,7 +174,7 @@ internal static class Program
         mobileAppContentFile.UploadState ??= default;
         mobileAppContentFile.IsDependency ??= default;
         mobileAppContentFile.CreatedDateTime ??= default;
-        mobileAppContentFile.Id ??= "";
+        mobileAppContentFile.Id ??= string.Empty;
         mobileAppContentFile.IsCommitted ??= default;
         mobileAppContentFile.IsFrameworkFile ??= default;
     }
