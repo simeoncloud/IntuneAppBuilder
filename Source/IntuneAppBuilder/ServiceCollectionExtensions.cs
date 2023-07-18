@@ -30,7 +30,7 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    ///     For more granular control, register IGraphServiceClient yourself.
+    ///     For more granular control, register GraphServiceClient yourself.
     /// </summary>
     /// <returns></returns>
     private static TokenCredential CreateTokenCredential(string token = null)
