@@ -41,7 +41,10 @@ internal static class Program
         {
             new Option<string[]>(new[] { "--source", "-s" },
                     "Specifies a source to publish. May be a directory with *.intunewin.json files or a single json file")
-                { Name = "sources", IsRequired = true }
+                { Name = "sources", IsRequired = true },
+            new Option<string>(new[] { "--token", "-t" },
+                    "Specifies an access token to use when publishing.")
+                { Name = "token", IsRequired = false }
         };
 #pragma warning disable S3011
         publish.Handler = CommandHandler.Create(typeof(Program).GetMethod(nameof(PublishAsync), BindingFlags.Static | BindingFlags.NonPublic)!);
@@ -57,10 +60,10 @@ internal static class Program
         return await root.InvokeAsync(args);
     }
 
-    internal static IServiceCollection GetServices()
+    internal static IServiceCollection GetServices(string token = null)
     {
         var services = new ServiceCollection();
-        services.AddIntuneAppBuilder();
+        services.AddIntuneAppBuilder(token);
         services.AddLogging(builder =>
         {
             // don't write info for HttpClient
@@ -82,9 +85,13 @@ internal static class Program
         foreach (var builder in sp.GetRequiredService<IEnumerable<IIntuneAppPackageBuilder>>()) await BuildAsync(builder, sp.GetRequiredService<IIntuneAppPackagingService>(), output, GetLogger(sp));
     }
 
-    internal static async Task PublishAsync(FileSystemInfo[] sources, IServiceCollection services = null)
+    internal static async Task PublishAsync(FileSystemInfo[] sources, string token = null, IServiceCollection services = null)
     {
-        services ??= GetServices();
+        if (token != null && services != null)
+        {
+            throw new ArgumentException($"Cannot specify both {nameof(token)} and {nameof(services)}.");
+        }
+        services ??= GetServices(token);
         var sp = services.BuildServiceProvider();
         var publishingService = sp.GetRequiredService<IIntuneAppPublishingService>();
         var logger = GetLogger(sp);
