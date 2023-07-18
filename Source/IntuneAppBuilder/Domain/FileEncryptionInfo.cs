@@ -27,8 +27,10 @@ namespace IntuneAppBuilder.Domain
         [JsonPropertyName("mac")]
         public byte[] Mac { get; set; }
 
+        [JsonPropertyName("macKey")]
         public byte[] MacKey { get; set; }
 
+        [JsonPropertyName("@odata.type")]
         public string ODataType { get; set; }
 
         [JsonPropertyName("profileIdentifier")]
