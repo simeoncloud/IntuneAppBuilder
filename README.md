@@ -61,6 +61,16 @@ IntuneAppBuilder will publish the app content. You will be prompted to sign in t
 
 After publishing, you can find the app in your Intune portal and make any required changes (assigning, updating the command line, detection rules, etc.).
 
+## Authentication
+
+IntuneAppBuilder uses
+the [device code flow](https://learn.microsoft.com/en-us/azure/active-directory/develop/scenario-desktop-acquire-token-device-code-flow)
+to authenticate by default. Optionally, an access token may be provided as a parameter to the publish command instead:
+
+```
+IntuneAppBuilder publish --source .\MyAppPackage\MyAppInstallFiles.intunewin.json --token <token>
+```
+
 ## Notes
 
 The Windows Installer COM service is used to retrieve information about MSIs if one is included in your application. When the tool is running on a non-Windows system, the tool will log a warning and continue creating the package without the additional MSI metadata.
