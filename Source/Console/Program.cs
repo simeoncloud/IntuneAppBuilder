@@ -13,7 +13,6 @@ using IntuneAppBuilder.Domain;
 using IntuneAppBuilder.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph.Beta.Models;
 using Microsoft.Kiota.Serialization.Json;
 using Command = System.CommandLine.Command;
 using FileSystemInfo = System.IO.FileSystemInfo;
