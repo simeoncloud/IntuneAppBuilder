@@ -148,7 +148,6 @@ namespace IntuneAppBuilder.Services
 
             if (result == null)
             {
-                SetDefaults(app);
                 // create new
                 logger.LogInformation($"App {app.DisplayName} does not exist - creating new app.");
                 result = (MobileLobApp)await msGraphClient.DeviceAppManagement.MobileApps.PostAsync(app);
@@ -242,55 +241,6 @@ namespace IntuneAppBuilder.Services
             finally
             {
                 if (disposeSourceStream) source.Dispose();
-            }
-        }
-
-        /// <summary>
-        ///     Gets a copy of the app with default values for null properties that are required.
-        /// </summary>
-        /// <param name="app"></param>
-        private static void SetDefaults(MobileLobApp app)
-        {
-            if (app is Win32LobApp win32)
-            {
-                SetDefaults(win32);
-            }
-        }
-
-        private static void SetDefaults(Win32LobApp app)
-        {
-            // set required properties with default values if not already specified - can be changed later in the portal
-            app.InstallExperience ??= new Win32LobAppInstallExperience { RunAsAccount = RunAsAccountType.System };
-            app.InstallCommandLine ??= app.MsiInformation == null ? app.SetupFilePath : $"msiexec /i \"{app.SetupFilePath}\"";
-            app.UninstallCommandLine ??= app.MsiInformation == null ? "echo Not Supported" : $"msiexec /x \"{app.MsiInformation.ProductCode}\"";
-            app.Publisher ??= "-";
-#pragma warning disable S3265
-            app.ApplicableArchitectures = WindowsArchitecture.X86 | WindowsArchitecture.X64;
-#pragma warning restore S3265
-            app.MinimumSupportedOperatingSystem ??= new WindowsMinimumOperatingSystem { V101607 = true };
-            if (app.DetectionRules == null)
-            {
-                if (app.MsiInformation == null)
-                {
-                    // no way to infer - use empty PS script
-                    app.DetectionRules = new List<Win32LobAppDetection>
-                    {
-                        new Win32LobAppPowerShellScriptDetection
-                        {
-                            ScriptContent = Convert.ToBase64String(new byte[0])
-                        }
-                    };
-                }
-                else
-                {
-                    app.DetectionRules = new List<Win32LobAppDetection>
-                    {
-                        new Win32LobAppProductCodeDetection
-                        {
-                            ProductCode = app.MsiInformation.ProductCode
-                        }
-                    };
-                }
             }
         }
     }

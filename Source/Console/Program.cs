@@ -5,6 +5,7 @@ using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using IntuneAppBuilder.Builders;
@@ -13,6 +14,7 @@ using IntuneAppBuilder.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph.Beta.Models;
+using Microsoft.Kiota.Serialization.Json;
 using Command = System.CommandLine.Command;
 using FileSystemInfo = System.IO.FileSystemInfo;
 
@@ -133,7 +135,16 @@ internal static class Program
 
             var baseFileName = Path.GetFileNameWithoutExtension(package.App.FileName);
 
-            File.WriteAllText($"{baseFileName}.intunewin.json", JsonSerializer.Serialize(package));
+            using (var jsonSerializerWriter = new JsonSerializationWriter())
+            {
+                jsonSerializerWriter.WriteObjectValue(string.Empty,package);
+                var serializedStream = jsonSerializerWriter.GetSerializedContent();
+                using (var reader = new StreamReader(serializedStream, Encoding.UTF8))
+                {
+                    var packageJsonString = await reader.ReadToEndAsync();
+                    File.WriteAllText($"{baseFileName}.intunewin.json", packageJsonString);
+                }
+            }
 
             await using (var fs = File.Open($"{baseFileName}.intunewin", FileMode.Create, FileAccess.Write, FileShare.Read))
             {
@@ -159,23 +170,12 @@ internal static class Program
     {
         logger.LogInformation($"Loading package from file {file.FullName}.");
 
-        var package = JsonSerializer.Deserialize<IntuneAppPackage>(File.ReadAllText(file.FullName));
-        SetDefaults(package.File);
+        var jsonParseNode = new JsonParseNode(JsonDocument.Parse(File.ReadAllText(file.FullName)).RootElement);
+        var package = jsonParseNode.GetObjectValue(IntuneAppPackage.CreateFromDiscriminatorValue);
         var dataPath = Path.Combine(file.DirectoryName!, Path.GetFileNameWithoutExtension(file.FullName));
         if (!File.Exists(dataPath)) throw new FileNotFoundException($"Could not find data file at {dataPath}.");
         logger.LogInformation($"Using package data file {dataPath}");
         package!.Data = File.Open(dataPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return package;
-    }
-
-    private static void SetDefaults(MobileAppContentFile mobileAppContentFile)
-    {
-        mobileAppContentFile.OdataType = "microsoft.graph.mobileAppContentFile";
-        mobileAppContentFile.UploadState ??= default;
-        mobileAppContentFile.IsDependency ??= default;
-        mobileAppContentFile.CreatedDateTime ??= default;
-        mobileAppContentFile.Id ??= string.Empty;
-        mobileAppContentFile.IsCommitted ??= default;
-        mobileAppContentFile.IsFrameworkFile ??= default;
     }
 }
