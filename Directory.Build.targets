@@ -1,17 +1,17 @@
 <Project>
-	<PropertyGroup>
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-		<CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)/default.ruleset</CodeAnalysisRuleSet>
-		<RunCodeAnalysis>true</RunCodeAnalysis>
-	</PropertyGroup>
+    <PropertyGroup>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)/default.ruleset</CodeAnalysisRuleSet>
+        <RunCodeAnalysis>true</RunCodeAnalysis>
+    </PropertyGroup>
 
-	<ItemGroup>
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="8.*">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>analyzers</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="GitVersion.MsBuild" Version="6.0.0-beta.3" >
-      <PrivateAssets>All</PrivateAssets>
-    </PackageReference>
-	</ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="SonarAnalyzer.CSharp" Version="8.*">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>analyzers</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="GitVersion.MsBuild" Version="6.0.0-beta.3">
+            <PrivateAssets>All</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
 </Project>
