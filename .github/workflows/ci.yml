@@ -9,7 +9,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
-      - master
+      - master 
 
 env:
   BuildConfiguration: 'Release'
