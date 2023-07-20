@@ -7,7 +7,7 @@ on:
     branches:
       - master
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
     branches:
       - master
 
@@ -28,15 +28,15 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-          
+
       - name: Set Up .NET Core
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '6.0.x'
+          dotnet-version: '7.0.x'
 
       - name: dotnet restore
         run: dotnet restore --verbosity $env:Verbosity
-      
+
       - name: dotnet build
         run: $env:GITHUB_REF = '${{ github.head_ref }}'; dotnet build --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-restore
 
