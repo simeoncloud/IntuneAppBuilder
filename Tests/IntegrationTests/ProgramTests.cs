@@ -8,6 +8,7 @@ using IntuneAppBuilder.IntegrationTests.Util;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Graph.Beta;
 using Microsoft.Graph.Beta.Models;
+using Microsoft.Graph.Beta.Models.ODataErrors;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Xunit;
 using Xunit.Abstractions;
@@ -112,15 +113,24 @@ namespace IntuneAppBuilder.IntegrationTests
         private async Task DeleteAppAsync(string name)
         {
             var graph = GetServices().BuildServiceProvider().GetRequiredService<GraphServiceClient>();
-            var apps = (await graph.DeviceAppManagement.MobileApps.GetAsync(requestConfiguration => requestConfiguration.QueryParameters.Filter = $"displayName eq '{name}'"))!.Value!.OfType<MobileLobApp>();
-            foreach (var app in apps)
+            try
             {
-                await graph.DeviceAppManagement.MobileApps[app.Id]
-                    .DeleteAsync(requestConfiguration => requestConfiguration.Options.Add(new RetryHandlerOption
-                    {
-                        MaxRetry = 3,
-                        ShouldRetry = (_, _, message) => !message.IsSuccessStatusCode
-                    }));
+                var apps = (await graph.DeviceAppManagement.MobileApps.GetAsync(requestConfiguration => requestConfiguration.QueryParameters.Filter = $"displayName eq '{name}'"))!.Value!.OfType<MobileLobApp>();
+
+
+                foreach (var app in apps)
+                {
+                    await graph.DeviceAppManagement.MobileApps[app.Id]
+                        .DeleteAsync(requestConfiguration => requestConfiguration.Options.Add(new RetryHandlerOption
+                        {
+                            MaxRetry = 3,
+                            ShouldRetry = (_, _, message) => !message.IsSuccessStatusCode
+                        }));
+                }
+            }
+            catch (ODataError exc)
+            {
+                Assert.True(false, exc.Error!.Message);
             }
         }
 

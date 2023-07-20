@@ -1,0 +1,12 @@
+<Project>
+    <PropertyGroup>
+        <BaseIntermediateOutputPath>$(SolutionDir)/.tmp/GitVersion/obj</BaseIntermediateOutputPath>
+        <OutputPath>$(SolutionDir)/.tmp/GitVersion/bin</OutputPath>
+    </PropertyGroup>
+    <Import Project="$(MSBuildBinPath)/Microsoft.Common.CurrentVersion.targets" />
+    <Import Project="$(BaseIntermediateOutputPath)/$(MSBuildThisFileName)$(MSBuildThisFileExtension).nuget.g.targets" Condition="Exists('$(BaseIntermediateOutputPath)/$(MSBuildThisFileName)$(MSBuildThisFileExtension).nuget.g.targets')" />
+    <ItemGroup>
+	    <PackageReference Include="GitVersion.MsBuild" Version="5.12.0" />
+    </ItemGroup>
+    <Target Name="Build" DependsOnTargets="GetVersion;WriteVersionInfoToBuildLog" Returns="$(GitVersion_NuGetVersion)" />
+</Project>
