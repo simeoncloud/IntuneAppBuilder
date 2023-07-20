@@ -11,9 +11,7 @@ using System.Xml.Serialization;
 using IntuneAppBuilder.Domain;
 using IntuneAppBuilder.Util;
 using Microsoft.Extensions.Logging;
-using Microsoft.Graph;
-using Directory = System.IO.Directory;
-using File = System.IO.File;
+using Microsoft.Graph.Beta.Models;
 
 namespace IntuneAppBuilder.Services
 {

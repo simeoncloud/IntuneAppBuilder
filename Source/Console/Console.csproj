@@ -1,24 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<OutputType>Exe</OutputType>
-		<TargetFramework>net6.0</TargetFramework>
-		<PackAsTool>true</PackAsTool>
-		<ToolCommandName>$(SolutionName)</ToolCommandName>
-		<Authors>Simeon</Authors>
-		<Description>
-			IntuneAppBuilder creates and deploys Intune packages for MSI and Win32 applications. This dotnet tool converts installation files into the .intunewin format that can then be published using the tool or uploaded manually into the Intune Portal.
-		</Description>
-		<NoWarn>$(NoWarn);NU5104</NoWarn>
-	</PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>$(SolutionName)</ToolCommandName>
+        <Authors>Simeon</Authors>
+        <Description>
+            IntuneAppBuilder creates and deploys Intune packages for MSI and Win32 applications. This dotnet tool converts installation files into the .intunewin format that can then be published using the tool or uploaded manually into the Intune Portal.
+        </Description>
+        <NoWarn>$(NoWarn);NU5104</NoWarn>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21308.1" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
-	</ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21308.1"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0"/>
+    </ItemGroup>
 
-	<ItemGroup>
-	  <ProjectReference Include="..\IntuneAppBuilder\IntuneAppBuilder.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\IntuneAppBuilder\IntuneAppBuilder.csproj"/>
+    </ItemGroup>
 
 </Project>

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using IntuneAppBuilder.Domain;
 using IntuneAppBuilder.Services;
-using Microsoft.Graph;
+using Microsoft.Graph.Beta.Models;
 
 namespace IntuneAppBuilder.Builders
 {
