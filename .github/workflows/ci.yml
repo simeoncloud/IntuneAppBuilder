@@ -16,7 +16,6 @@ env:
   Verbosity: 'normal'
   ArtifactName: 'Artifacts'
   ArtifactDirectory: './artifacts/'
-  IGNORE_NORMALISATION_GIT_HEAD_MOVE: 1
 
 defaults:
   run:
@@ -27,6 +26,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - uses: actions/checkout@v2
+        if: github.event_name == 'push'
         with:
           fetch-depth: 0
 
