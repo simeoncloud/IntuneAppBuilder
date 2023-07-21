@@ -7,7 +7,7 @@ on:
     branches:
       - master
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
     branches:
       - master
 
@@ -24,31 +24,32 @@ defaults:
 jobs:
   Build:
     runs-on: windows-latest
+    concurrency: build-job
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        if: github.event_name == 'pull_request'
         with:
           fetch-depth: 0
-          
-      - name: Set Up .NET Core
-        uses: actions/setup-dotnet@v1
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - uses: actions/checkout@v3
+        if: github.event_name == 'push'
         with:
-          dotnet-version: '6.0.x'
+          fetch-depth: 0
+
+      - name: Set Up .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'
 
       - name: dotnet restore
         run: dotnet restore --verbosity $env:Verbosity
-      
+
       - name: dotnet build
         run: $env:GITHUB_REF = '${{ github.head_ref }}'; dotnet build --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-restore
 
       - name: dotnet pack
         run: $env:GITHUB_REF = '${{ github.head_ref }}'; dotnet pack --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
-
-      - name: Turnstyle
-        uses: softprops/turnstyle@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          same-branch-only: false
 
       - name: dotnet test
         run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
@@ -57,7 +58,7 @@ jobs:
           AadAuth:Password: ${{ secrets.TEST_AADAUTH_PASSWORD }}
 
       - name: Publish Pipeline Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ env.ArtifactName }}
           path: ${{ env.ArtifactDirectory }}
