@@ -1,2 +1,5 @@
 mode: Mainline
 next-version: 3.0.0
+ignore:
+  sha:
+    - fad543491dba99086f658fea83a91ebf04d3a647

@@ -16,7 +16,6 @@ env:
   Verbosity: 'normal'
   ArtifactName: 'Artifacts'
   ArtifactDirectory: './artifacts/'
-  IGNORE_NORMALISATION_GIT_HEAD_MOVE: 1
 
 defaults:
   run:
