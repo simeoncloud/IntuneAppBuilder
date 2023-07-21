@@ -24,6 +24,7 @@ defaults:
 jobs:
   Build:
     runs-on: windows-latest
+    concurrency: build-job
     steps:
       - uses: actions/checkout@v3
         if: github.event_name == 'pull_request'
@@ -49,13 +50,6 @@ jobs:
 
       - name: dotnet pack
         run: $env:GITHUB_REF = '${{ github.head_ref }}'; dotnet pack --configuration $env:BuildConfiguration --verbosity $env:Verbosity --no-build -o $env:ArtifactDirectory
-
-      - name: Turnstyle
-        uses: softprops/turnstyle@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          same-branch-only: false
 
       - name: dotnet test
         run: dotnet test --configuration $env:BuildConfiguration --no-build --verbosity $env:Verbosity
