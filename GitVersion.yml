@@ -1,4 +1,2 @@
 mode: Mainline
-next-version: 3.0.0
-ignore:
-  commits-before: 2023-07-20T22:17:00
+next-version: 3.0
