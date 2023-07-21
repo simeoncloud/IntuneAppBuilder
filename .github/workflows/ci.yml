@@ -21,7 +21,7 @@ defaults:
   run:
     shell: pwsh
 
-jobs: 
+jobs:
   Build:
     runs-on: windows-latest
     concurrency: build-job
