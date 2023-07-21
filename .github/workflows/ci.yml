@@ -24,7 +24,7 @@ defaults:
 jobs:
   Build:
     runs-on: windows-latest
-    concurrency: build-job
+    concurrency: build-job 
     steps:
       - uses: actions/checkout@v3
         if: github.event_name == 'pull_request'
