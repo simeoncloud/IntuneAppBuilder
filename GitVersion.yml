@@ -3,3 +3,5 @@ next-version: 3.0.0
 ignore:
   sha:
     - fad543491dba99086f658fea83a91ebf04d3a647
+    - b220704250aa8d366e0fb2e4efb9b4a2eff5ad41
+    - c092b84e0479debb10c3bf2e206bd8f10593ec60
