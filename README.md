@@ -85,3 +85,10 @@ IntuneAppBuilder publish --source .\MyAppPackage\MyAppInstallFiles.intunewin.jso
 The Windows Installer COM service is used to retrieve information about MSIs if one is included in your application.
 When the tool is running on a non-Windows system, the tool will log a warning and continue creating the package without
 the additional MSI metadata.
+
+## Dependencies
+
+- **Package Name**: [xunit](https://github.com/xunit/xunit) and [xunit.runner.visualstudio](https://github.com/xunit/visualstudio.xunit)
+  - **Version**: 2.4.0
+  - **Author**: xunit
+  - **License**: [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
