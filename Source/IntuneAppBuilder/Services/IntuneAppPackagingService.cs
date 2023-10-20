@@ -236,7 +236,7 @@ namespace IntuneAppBuilder.Services
 
                 var overrides = new XmlAttributeOverrides();
                 overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.AdditionalData), new XmlAttributes { XmlIgnore = true });
-                overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.ODataType), new XmlAttributes { XmlIgnore = true });
+                overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.OdataType), new XmlAttributes { XmlIgnore = true });
 
                 new XmlSerializer(typeof(FileEncryptionInfo), overrides, new Type[0],
                         new XmlRootAttribute("EncryptionInfo"), null)
