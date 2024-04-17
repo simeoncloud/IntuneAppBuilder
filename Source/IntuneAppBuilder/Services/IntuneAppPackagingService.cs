@@ -235,6 +235,7 @@ namespace IntuneAppBuilder.Services
                 writer.WriteWhitespace("");
 
                 var overrides = new XmlAttributeOverrides();
+                overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.BackingStore), new XmlAttributes { XmlIgnore = true });
                 overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.AdditionalData), new XmlAttributes { XmlIgnore = true });
                 overrides.Add(typeof(FileEncryptionInfo), nameof(FileEncryptionInfo.OdataType), new XmlAttributes { XmlIgnore = true });
 
