@@ -5,14 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Azure;
 using IntuneAppBuilder.Builders;
 using IntuneAppBuilder.Domain;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph.Beta;
 using Microsoft.Graph.Beta.Models;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Azure.Storage.Blobs.Specialized;
 
 namespace IntuneAppBuilder.Services
 {
@@ -112,7 +112,7 @@ namespace IntuneAppBuilder.Services
                     {
                         await TryPutBlockAsync(contentFile, blockId, ms);
                     }
-                    catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == 403)
+                    catch (RequestFailedException ex) when (ex.Status == 403)
                     {
                         // normally the timer should account for renewing upload URIs, but the Intune APIs are fundamentally unstable and sometimes 403s will be encountered randomly
                         contentFile = await RenewStorageUri(contentFileRequestBuilder);
@@ -124,7 +124,7 @@ namespace IntuneAppBuilder.Services
                 blockIds.Add(blockId);
             }
 
-            await new CloudBlockBlob(new Uri(contentFile.AzureStorageUri)).PutBlockListAsync(blockIds);
+            await new BlockBlobClient(new Uri(contentFile.AzureStorageUri)).CommitBlockListAsync(blockIds);
         }
 
         /// <summary>
@@ -178,13 +178,13 @@ namespace IntuneAppBuilder.Services
             while (true)
                 try
                 {
-                    await new CloudBlockBlob(new Uri(contentFile.AzureStorageUri)).PutBlockAsync(blockId, stream, null);
+                    await new BlockBlobClient(new Uri(contentFile.AzureStorageUri)).StageBlockAsync(blockId, stream, null);
                     break;
                 }
-                catch (StorageException ex)
+                catch (RequestFailedException ex)
                 {
-                    if (!new[] { 307, 403, 400 }.Contains(ex.RequestInformation.HttpStatusCode) || attemptCount++ > 30) throw;
-                    logger.LogInformation($"Encountered retryable error ({ex.RequestInformation.HttpStatusCode}) uploading blob to {contentFile.AzureStorageUri} - will retry in 10 seconds.");
+                    if (!new[] { 307, 403, 400 }.Contains(ex.Status) || attemptCount++ > 30) throw;
+                    logger.LogInformation($"Encountered retryable error ({ex.Status}) uploading blob to {contentFile.AzureStorageUri} - will retry in 10 seconds.");
                     stream.Position = position;
                     await Task.Delay(10000);
                 }
