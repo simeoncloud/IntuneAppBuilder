@@ -29,7 +29,7 @@ namespace IntuneAppBuilder.IntegrationTests.Util
                 "14d82eec-204b-4c2f-b7e8-296a70dab67e"); // Microsoft Graph PowerShell well known client id
         });
 
-        private IAuthenticationProvider InnerProvider => new AzureIdentityAuthenticationProvider(tokenCredential.Value, scopes: "DeviceManagementApps.ReadWrite.All");
+        private IAuthenticationProvider InnerProvider => new AzureIdentityAuthenticationProvider(tokenCredential.Value, isCaeEnabled: false, scopes: "DeviceManagementApps.ReadWrite.All");
 
         public async Task AuthenticateRequestAsync(RequestInformation request, Dictionary<string, object> additionalAuthenticationContext = default, CancellationToken cancellationToken = default) => await InnerProvider.AuthenticateRequestAsync(request, additionalAuthenticationContext, cancellationToken);
     }
