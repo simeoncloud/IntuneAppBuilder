@@ -1,8 +1,6 @@
 name: Continuous Integration
 
 on:
-  schedule:
-    - cron: "30 7 * * *"
   push:
     branches:
       - master
@@ -64,7 +62,6 @@ jobs:
           path: ${{ env.ArtifactDirectory }}
 
   Deploy:
-    if: github.event_name != 'schedule'
     needs: Build
     name: Deploy to nuget.org
     environment: nuget.org
