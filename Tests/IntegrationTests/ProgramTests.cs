@@ -126,7 +126,7 @@ namespace IntuneAppBuilder.IntegrationTests
 
         private IServiceCollection GetServices() =>
             Program.GetServices()
-                .AddSingleton(_ => new GraphServiceClient(new EnvironmentVariableUsernamePasswordProvider()));
+                .AddSingleton(_ => new GraphServiceClient(new EnvironmentVariableClientSecretProvider()));
 
         private static async Task ExecuteInDirectory(string path, Func<Task> action)
         {
