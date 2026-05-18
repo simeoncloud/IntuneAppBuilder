@@ -1,4 +1,4 @@
-te# IntuneAppBuilder
+# IntuneAppBuilder
 
 Package MSI and Win32 application packages as .intunewin format to Microsoft Intune with this cross-platform tool.
 
@@ -15,7 +15,7 @@ full functionality at https://simeoncloud.com.
 
 ## Getting Started
 
-1. **[Get .NET Core 3.1 SDK](https://dotnet.microsoft.com/download)** (or higher)
+1. **[Get .NET 8 SDK](https://dotnet.microsoft.com/download)** (or higher)
 
 2. **Install** from an elevated command prompt
 
@@ -85,6 +85,36 @@ IntuneAppBuilder publish --source .\MyAppPackage\MyAppInstallFiles.intunewin.jso
 The Windows Installer COM service is used to retrieve information about MSIs if one is included in your application.
 When the tool is running on a non-Windows system, the tool will log a warning and continue creating the package without
 the additional MSI metadata.
+
+## Running the integration tests
+
+The `IntegrationTests` project publishes real apps to a Microsoft Intune tenant. It authenticates via the
+Microsoft Graph **client credentials** (app-only) flow.
+
+### One-time setup
+
+1. Register an application in your Entra ID test tenant.
+2. Grant the Microsoft Graph **application** permission `DeviceManagementApps.ReadWrite.All` and admin-consent it.
+3. Create a client secret on the app registration.
+
+### Run the tests
+
+Set the following environment variables, then run `dotnet test`:
+
+```
+AadAuth:TenantId      - the Entra ID tenant id (GUID)
+AadAuth:ClientId      - the registered app's client id (GUID)
+AadAuth:ClientSecret  - the registered app's client secret value
+```
+
+```
+dotnet test IntuneAppBuilder.sln --configuration Release
+```
+
+In CI the same values are sourced from the `TEST_AADAUTH_TENANT_ID`, `TEST_AADAUTH_CLIENT_ID`, and
+`TEST_AADAUTH_CLIENT_SECRET` GitHub repository secrets.
+
+The tests will create and then delete apps in the target tenant - use a sandbox tenant.
 
 ## Dependencies
 
